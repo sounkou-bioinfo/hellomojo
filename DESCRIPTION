@@ -7,7 +7,7 @@ Authors@R:
 Description: This package demonstrates how to use the 'mojo' by calling shared library builds 
     from R through its .Call interface.
 License: GPL (>= 3)
-suggests:
+Suggests:
     callme,
     bench
 SystemsRequirements: mojo installation (https://docs.modular.com/mojo/manual/install) via pixi
