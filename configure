@@ -28,7 +28,7 @@ else
 fi
 $pixi run mojo build hellomojo.mojo \
 --emit shared-lib \
--o ${thisDir}/inst/libs/libhello.${libsuffix}
+-o ${thisDir}/inst/libs/libhello.${libsuffix} || exit 1
 
 ls ${thisDir}/inst/libs/libhello.${libsuffix} || exit 1
 

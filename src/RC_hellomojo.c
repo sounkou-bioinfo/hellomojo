@@ -3,8 +3,15 @@
 #include <R_ext/Rdynload.h>
 // Declaration of the Mojo function
 extern void hello();
+extern double add( double a, double b);
+// c wrapper for the Mojo add function
+void add_(double *a, double *b, double *c) {
+    *c = add(*a, *b);
+}
+
 static const R_CMethodDef CEntries[] = {
     {"hello", (DL_FUNC) &hello, 0},
+    {"add", (DL_FUNC) &add_, 3},
     {NULL, NULL, 0}
 };
 void R_init_hellomojo(DllInfo *dll) {
