@@ -66,8 +66,14 @@ cat src/RC_hellomojo.c
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
+
 // Declaration of the Mojo function
 extern void hello();
+// .Call wrapper for hello 
+SEXP hello_call() {
+    hello();
+    return R_NilValue;
+}
 extern double add(double a, double b);
 // .Call wrapper for the Mojo add function
 SEXP add_call(SEXP a, SEXP b) {
@@ -76,22 +82,18 @@ SEXP add_call(SEXP a, SEXP b) {
     double result = add(ad, bd);
     return ScalarReal(result);
 }
-// .Call wrapper for hello 
-SEXP hello_call() {
-    hello();
-    return R_NilValue;
-}
-// Declaration of the Mojo convolution function
-extern void convolve(const double *signal, int signal_len, const double *kernel, int kernel_len, double *output);
 
+// Declaration of the Mojo convolution function
+extern void convolve(const double *signal, int signal_len,
+        const double *kernel, int kernel_len, double *output);
 // .Call wrapper for the Mojo convolution function
 SEXP convolve_call(SEXP signal, SEXP kernel) {
     R_xlen_t n_signal = XLENGTH(signal);
     R_xlen_t n_kernel = XLENGTH(kernel);
     if (!isReal(signal) || !isReal(kernel))
-        error("Both signal and kernel must be numeric vectors");
+        Rf_error("Both signal and kernel must be numeric vectors");
     if (n_signal < n_kernel)
-        error("Signal length must be >= kernel length");
+        Rf_error("Signal length must be >= kernel length");
     R_xlen_t n_out = n_signal - n_kernel + 1;
     SEXP out = PROTECT(allocVector(REALSXP, n_out));
     convolve(REAL(signal), n_signal, REAL(kernel), n_kernel, REAL(out));
@@ -150,7 +152,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.10963890 -0.49592219 -0.09532977  0.16024745 -0.13300005  0.42368430
+#> [1]  0.80784223  0.89323070  0.46564746  0.06064654 -0.47927430 -0.65572469
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -160,8 +162,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         10.9µs   24.3µs    40840.    78.2KB     57.3
-#> 2 c              10µs   32.9µs    31974.    78.2KB     44.8
+#> 1 mojo         10.6µs   24.3µs    40735.    78.2KB     57.1
+#> 2 c              10µs   32.8µs    32070.    78.2KB     45.0
 ```
 
 ## Limitations to investigate

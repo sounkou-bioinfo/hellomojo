@@ -1,8 +1,14 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
+
 // Declaration of the Mojo function
 extern void hello();
+// .Call wrapper for hello 
+SEXP hello_call() {
+    hello();
+    return R_NilValue;
+}
 extern double add(double a, double b);
 // .Call wrapper for the Mojo add function
 SEXP add_call(SEXP a, SEXP b) {
@@ -11,22 +17,18 @@ SEXP add_call(SEXP a, SEXP b) {
     double result = add(ad, bd);
     return ScalarReal(result);
 }
-// .Call wrapper for hello 
-SEXP hello_call() {
-    hello();
-    return R_NilValue;
-}
-// Declaration of the Mojo convolution function
-extern void convolve(const double *signal, int signal_len, const double *kernel, int kernel_len, double *output);
 
+// Declaration of the Mojo convolution function
+extern void convolve(const double *signal, int signal_len,
+        const double *kernel, int kernel_len, double *output);
 // .Call wrapper for the Mojo convolution function
 SEXP convolve_call(SEXP signal, SEXP kernel) {
     R_xlen_t n_signal = XLENGTH(signal);
     R_xlen_t n_kernel = XLENGTH(kernel);
     if (!isReal(signal) || !isReal(kernel))
-        error("Both signal and kernel must be numeric vectors");
+        Rf_error("Both signal and kernel must be numeric vectors");
     if (n_signal < n_kernel)
-        error("Signal length must be >= kernel length");
+        Rf_error("Signal length must be >= kernel length");
     R_xlen_t n_out = n_signal - n_kernel + 1;
     SEXP out = PROTECT(allocVector(REALSXP, n_out));
     convolve(REAL(signal), n_signal, REAL(kernel), n_kernel, REAL(out));
