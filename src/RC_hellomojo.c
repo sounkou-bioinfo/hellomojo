@@ -3,21 +3,26 @@
 #include <R_ext/Rdynload.h>
 // Declaration of the Mojo function
 extern void hello();
-extern double add( double a, double b);
-// c wrapper for the Mojo add function
-// we do this because we have no clue
-// how to pass pointers to mojo functions
-void add_(double *a, double *b, double *c) {
-    *c = add(*a, *b);
+extern double add(double a, double b);
+// .Call wrapper for the Mojo add function
+SEXP add_call(SEXP a, SEXP b) {
+    double ad = asReal(a);
+    double bd = asReal(b);
+    double result = add(ad, bd);
+    return ScalarReal(result);
 }
-
-static const R_CMethodDef CEntries[] = {
-    {"hello", (DL_FUNC) &hello, 0},
-    {"add", (DL_FUNC) &add_, 3},
+// .Call wrapper for hello (void)
+SEXP hello_call() {
+    hello();
+    return R_NilValue;
+}
+static const R_CallMethodDef CallEntries[] = {
+    {"hello", (DL_FUNC) &hello_call, 0},
+    {"add", (DL_FUNC) &add_call, 2},
     {NULL, NULL, 0}
 };
 void R_init_hellomojo(DllInfo *dll) {
-    R_registerRoutines(dll, CEntries, NULL, NULL, NULL);
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, TRUE);
     R_forceSymbols(dll, TRUE);
 }
