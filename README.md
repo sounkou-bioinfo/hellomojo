@@ -111,19 +111,9 @@ void R_init_hellomojo(DllInfo *dll) {
 }
 ```
 
-## Limitations to investigate
-
-Of course here we are using pixi to get Mojo binaries, installing this
-on the R windows toolchain is not given. We should use uv or make a R
-package that install pix. Moreover i could not add windown to the
-current pixi workspace. This package should work fine on unix. Moreover
-we are calling the mojo shared object in the same address space as R
-even though the toolchains were different.
-
-Additionally we have an additional C wrapping which may be not required
-if we pass the data directly to the mojo C callables.
-
 ## Convolution Example and Benchmark
+
+The classic convolution benchmark
 
 ``` r
 # Example data
@@ -169,9 +159,21 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         1.35µs   2.96µs   314421.    7.84KB     31.4
-#> 2 c            1.47µs   3.76µs   299939.    7.84KB     30.0
+#> 1 mojo         1.34µs   2.95µs   319715.    7.84KB     32.0
+#> 2 c            1.46µs   3.77µs   299831.    7.84KB     30.0
 ```
+
+## Limitations to investigate
+
+Of course here we are using pixi to get Mojo binaries, installing this
+on the R windows toolchain is not given. We should use uv or make a R
+package that install pix. Moreover i could not add windown to the
+current pixi workspace. This package should work fine on unix. Moreover
+we are calling the mojo shared object in the same address space as R
+even though the toolchains were different.
+
+Additionally we have an additional C wrapping which may be not required
+if we pass the data directly to the mojo C callables.
 
 ## References
 

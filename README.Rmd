@@ -42,14 +42,11 @@ the C wrappers
 cat src/RC_hellomojo.c
 ```
 
-## Limitations to investigate
 
-Of course here we are using pixi to get Mojo binaries, installing 
-this on the R windows toolchain is not given. We should use uv or make a R package that install pix. Moreover i could not add windown to the current pixi workspace. This package should work fine on unix. Moreover we are calling the mojo shared object in the same address space as R even though the toolchains were different.
-
-Additionally we have an additional C wrapping which may be not required if we pass the data directly to the mojo C callables.
 
 ## Convolution Example and Benchmark
+
+The classic convolution benchmark 
 
 ```{r}
 # Example data
@@ -93,6 +90,14 @@ bench::mark(
 )    
   
 ```
+
+## Limitations to investigate
+
+Of course here we are using pixi to get Mojo binaries, installing 
+this on the R windows toolchain is not given. We should use uv or make a R package that install pix. Moreover i could not add windown to the current pixi workspace. This package should work fine on unix. Moreover we are calling the mojo shared object in the same address space as R even though the toolchains were different.
+
+Additionally we have an additional C wrapping which may be not required if we pass the data directly to the mojo C callables.
+
 
 ## References
 
