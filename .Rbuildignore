@@ -1,2 +1,3 @@
 ^LICENSE\.md$
 ^inst/mojo/hellomojo/\.pixi/*$
+^\.github$
