@@ -1,0 +1,35 @@
+#!/bin/sh
+# install mojo and pixi if necessary
+pixi="${HOME}/.pixi/bin/pixi"
+thisDir=$(dirname "$0")
+thisDir=`realpath $thisDir`
+command -v $pixi >/dev/null 2>&1 || { 
+    echo "pixi not found, installing pixi..." >&2; 
+    curl -fsSL https://pixi.sh/install.sh | sh
+}
+if [ ! -f "$pixi" ]; then
+    echo "pixi installation failed!" >&2
+    exit 1
+fi
+cd ${thisDir}/inst/mojo || mkdir -p ${thisDir}/inst/mojo
+cd ${thisDir}/inst/mojo/hellomojo || exit 1
+if [ ! -d "${thisDir}/inst/libs" ]; then
+    mkdir -p "${thisDir}/inst/libs"
+fi
+$pixi add mojo || true
+$pixi run mojo --version
+# build share library with the right suffix for the platform
+if [ "$(uname)" = "Darwin" ]; then
+   libsuffix="dylib"
+elif [ "$(expr substr $(uname -s) 1 5)" = "Linux" ]; then
+   libsuffix="so"
+else 
+   libsuffix="dll"
+fi
+$pixi run mojo build hellomojo.mojo \
+--emit shared-lib \
+-o ${thisDir}/inst/libs/libhello.${libsuffix}
+
+ls ${thisDir}/inst/libs/libhello.${libsuffix} || exit 1
+
+cp ${thisDir}/src/Makevars.in ${thisDir}/src/Makevars

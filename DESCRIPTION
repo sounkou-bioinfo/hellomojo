@@ -1,0 +1,12 @@
+Package: hellomojo
+Title: An Example R Package that Uses 'mojo' Through the C Interface
+Version: 0.0.0.9000
+Authors@R: 
+    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+Description: This package demonstrates how to use the 'mojo' library from R through its C interface.
+License: GPL (>= 3)
+SystemsRequirements: mojo installation, pixi to install mojo
+Os_type: unix
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3

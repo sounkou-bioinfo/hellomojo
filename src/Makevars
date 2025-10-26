@@ -1,0 +1,2 @@
+ThisDIR = $(CURDIR)
+PKG_LIBS = -L$(ThisDIR)/../inst/libs -lhello -Wl,-rpath,'$$ORIGIN'

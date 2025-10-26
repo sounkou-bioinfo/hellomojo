@@ -1,0 +1,5 @@
+#!/bin/sh
+# cleanup script
+rm -rf inst/libs/hello.so inst/libs/hello.dylib inst/libs/hello.dll
+rm src/*so src/*dll src/*dylib
+rm -rf inst/mojo/hellomojo/.pixi
