@@ -50,7 +50,7 @@ The classic convolution benchmark
 
 ```{r}
 # Example data
-signal <- rnorm(1000)
+signal <- rnorm(10000)
 kernel <- c(0.2, 0.5, 0.3)
 
 # Mojo convolution
@@ -81,7 +81,7 @@ c_result <- c_convolve(signal, kernel)
 
 # Check results are similar
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
-
+mojo_result |> head()
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),

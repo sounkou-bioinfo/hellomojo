@@ -117,7 +117,7 @@ The classic convolution benchmark
 
 ``` r
 # Example data
-signal <- rnorm(1000)
+signal <- rnorm(10000)
 kernel <- c(0.2, 0.5, 0.3)
 
 # Mojo convolution
@@ -149,7 +149,8 @@ c_result <- c_convolve(signal, kernel)
 # Check results are similar
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
-
+mojo_result |> head()
+#> [1] -0.10963890 -0.49592219 -0.09532977  0.16024745 -0.13300005  0.42368430
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -159,8 +160,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         1.34µs   2.95µs   319715.    7.84KB     32.0
-#> 2 c            1.46µs   3.77µs   299831.    7.84KB     30.0
+#> 1 mojo         10.9µs   24.3µs    40840.    78.2KB     57.3
+#> 2 c              10µs   32.9µs    31974.    78.2KB     44.8
 ```
 
 ## Limitations to investigate
