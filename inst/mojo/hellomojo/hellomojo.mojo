@@ -1,5 +1,6 @@
 # Mojo code for hello world and addition functions
-# exported to c?
+# exported to callable
+# with R via .C interface
 
 @export
 fn hello():
