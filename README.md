@@ -16,7 +16,8 @@ Some boilerplate is required, but this can be automated.
 Mojo code is compiled to a shared library, in our case `libhello.so`. A
 C file [`RC_hellomojo.c`](src/RC_hellomojo.c) provides wrappers and
 registration so R can call the Mojo functions via the `.Call` interface.
-R functions like `hellomojo()` call the native code using `.Call()`. The
+R functions like `hellomojo()` call the native code using `.Call()`(can
+t see the hello world in the Readme bc it is written in C stdout). The
 [`configure`](configure) script uses [pixi](https://pixi.sh/) to install
 mojo and run the shared library build.
 
@@ -83,14 +84,14 @@ void R_init_hellomojo(DllInfo *dll) {
 ## Limitations to investigate
 
 Of course here we are using pixi to get Mojo binaries, installing this
-on the R windows toolchain is not given. This package should work fine
-on unix. Moreover we are calling the mojo shared object in the same
-address space as R even though the toolchains were different.
+on the R windows toolchain is not given. We should use uv or make a R
+package that install pix. Moreover i could not add windown to the
+current pixi workspace. This package should work fine on unix. Moreover
+we are calling the mojo shared object in the same address space as R
+even though the toolchains were different.
 
 Additionally we have an additional C wrapping which may be not required
-if we pass the data directly to the mojo C callables. Moreover we are
-using the `.Call` interface, which is more efficient than `.C` as it
-avoids unnecessary copies.
+if we pass the data directly to the mojo C callables.
 
 ## References
 
@@ -98,4 +99,4 @@ avoids unnecessary copies.
 Guide](https://docs.modular.com/mojo/manual/get-started)  
 [pixi: Package and Environment Manager](https://pixi.sh/)
 
-[simpleC example](https://github.com/coolbutuseless/simplec)
+[simpleCall example](https://github.com/coolbutuseless/simpleCall)
