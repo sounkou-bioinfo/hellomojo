@@ -1,9 +1,6 @@
 
 # hellomojo: R Package Using Mojo via the `.C` Interface
 
-[Mojo Getting Started
-Guide](https://docs.modular.com/mojo/manual/get-started)
-
 ## Overview
 
 This package provides a setup to call
