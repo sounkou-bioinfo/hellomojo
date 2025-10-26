@@ -2,3 +2,4 @@
 ^inst/mojo/hellomojo/\.pixi/*$
 ^\.github$
 ^README\.Rmd$
+^README\.html$
