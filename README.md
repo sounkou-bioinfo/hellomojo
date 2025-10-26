@@ -1,5 +1,7 @@
 
-# hellomojo: R Package Using Mojo via the `.C` Interface
+# hellomojo
+
+An Example R Package that Uses ‘mojo’ Through the `.C` Interface
 
 ## Overview
 

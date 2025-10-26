@@ -2,8 +2,6 @@
 output: github_document
 ---
 
-# hellomojo: R Package Using Mojo via the `.C` Interface
-
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -12,6 +10,9 @@ knitr::opts_chunk$set(
   fig.path = "docs/README-"
 )
 ```
+# hellomojo
+
+An Example R Package that Uses 'mojo' Through the `.C` Interface 
 
 ## Overview
 
