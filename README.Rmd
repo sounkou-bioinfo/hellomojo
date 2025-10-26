@@ -29,7 +29,11 @@ Mojo code is compile to shared libary, in our case `libhello.so`. A C file [`RC_
 hellomojo::hellomojo()
 hellomojo::hellomojo_add(10,30)
 ```
+the mojo code
 
+```{r engine='bash', comment=''}
+cat inst/mojo/hellomojo/hellomojo.mojo
+```
 ## Limitations to investigate
 
 Of course here we are using pixi to get Mojo binaries, installing 
