@@ -13,3 +13,12 @@ hellomojo <- function() {
 hellomojo_add <- function(a, b) {
     .Call(add, as.numeric(a), as.numeric(b))
 }
+
+#' 1D convolution using the native Mojo function
+#' @param signal Numeric vector (signal)
+#' @param kernel Numeric vector (kernel)
+#' @return Numeric vector (convolution result)
+#' @export
+hellomojo_convolve <- function(signal, kernel) {
+    .Call(convolve, as.numeric(signal), as.numeric(kernel))
+}

@@ -49,8 +49,53 @@ this on the R windows toolchain is not given. We should use uv or make a R packa
 
 Additionally we have an additional C wrapping which may be not required if we pass the data directly to the mojo C callables.
 
+## Convolution Example and Benchmark
+
+```{r}
+# Example data
+signal <- rnorm(1000)
+kernel <- c(0.2, 0.5, 0.3)
+
+# Mojo convolution
+mojo_result <- hellomojo::hellomojo_convolve(signal, kernel)
+
+# C convolution using callme
+code <- '
+  SEXP c_convolve(SEXP signal, SEXP kernel) {
+    R_xlen_t n_signal = XLENGTH(signal);
+    R_xlen_t n_kernel = XLENGTH(kernel);
+    R_xlen_t n_out = n_signal - n_kernel + 1;
+    SEXP out = PROTECT(allocVector(REALSXP, n_out));
+    double *sig = REAL(signal);
+    double *ker = REAL(kernel);
+    double *o = REAL(out);
+    for (R_xlen_t i = 0; i < n_out; ++i) {
+      double acc = 0.0;
+      for (R_xlen_t j = 0; j < n_kernel; ++j) {
+        acc += sig[i + j] * ker[j];
+      }
+      o[i] = acc;
+    }
+    UNPROTECT(1);
+    return out;
+  }'
+callme::compile(code)
+c_result <- c_convolve(signal, kernel)
+
+# Check results are similar
+print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
+
+# Benchmark
+bench::mark(
+        mojo = hellomojo::hellomojo_convolve(signal, kernel),
+        c = c_convolve(signal, kernel),
+        check = FALSE
+)    
+  
+```
+
 ## References
 
-[Mojo Getting Started Guide](https://docs.modular.com/mojo/manual/get-started)  
-[pixi: Package and Environment Manager](https://pixi.sh/)
-[simpleCall example](https://github.com/coolbutuseless/simpleCall)
+- [Mojo Getting Started Guide](https://docs.modular.com/mojo/manual/get-started)  
+- [pixi: Package and Environment Manager](https://pixi.sh/)
+- [simpleCall example](https://github.com/coolbutuseless/simpleCall)

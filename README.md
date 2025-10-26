@@ -45,6 +45,18 @@ fn hello():
 @export
 fn add( a: Float64, b: Float64) -> Float64:
     return a + b
+
+@export
+fn convolve(signal: UnsafePointer[Float64], signal_len: Int, kernel: UnsafePointer[Float64], kernel_len: Int, output: UnsafePointer[Float64]):
+    i: Int = 0
+    while i < signal_len - kernel_len + 1:
+        acc: Float64 = 0.0
+        j: Int = 0
+        while j < kernel_len:
+            acc = acc + (signal + i + j)[] * (kernel + j)[]
+            j = j + 1
+        (output + i)[] = acc
+        i = i + 1
 ```
 
 the C wrappers
@@ -69,9 +81,27 @@ SEXP hello_call() {
     hello();
     return R_NilValue;
 }
+// Declaration of the Mojo convolution function
+extern void convolve(const double *signal, int signal_len, const double *kernel, int kernel_len, double *output);
+
+// .Call wrapper for the Mojo convolution function
+SEXP convolve_call(SEXP signal, SEXP kernel) {
+    R_xlen_t n_signal = XLENGTH(signal);
+    R_xlen_t n_kernel = XLENGTH(kernel);
+    if (!isReal(signal) || !isReal(kernel))
+        error("Both signal and kernel must be numeric vectors");
+    if (n_signal < n_kernel)
+        error("Signal length must be >= kernel length");
+    R_xlen_t n_out = n_signal - n_kernel + 1;
+    SEXP out = PROTECT(allocVector(REALSXP, n_out));
+    convolve(REAL(signal), n_signal, REAL(kernel), n_kernel, REAL(out));
+    UNPROTECT(1);
+    return out;
+}
 static const R_CallMethodDef CallEntries[] = {
     {"hello", (DL_FUNC) &hello_call, 0},
     {"add", (DL_FUNC) &add_call, 2},
+    {"convolve", (DL_FUNC) &convolve_call, 2},
     {NULL, NULL, 0}
 };
 void R_init_hellomojo(DllInfo *dll) {
@@ -93,10 +123,59 @@ even though the toolchains were different.
 Additionally we have an additional C wrapping which may be not required
 if we pass the data directly to the mojo C callables.
 
+## Convolution Example and Benchmark
+
+``` r
+# Example data
+signal <- rnorm(1000)
+kernel <- c(0.2, 0.5, 0.3)
+
+# Mojo convolution
+mojo_result <- hellomojo::hellomojo_convolve(signal, kernel)
+
+# C convolution using callme
+code <- '
+  SEXP c_convolve(SEXP signal, SEXP kernel) {
+    R_xlen_t n_signal = XLENGTH(signal);
+    R_xlen_t n_kernel = XLENGTH(kernel);
+    R_xlen_t n_out = n_signal - n_kernel + 1;
+    SEXP out = PROTECT(allocVector(REALSXP, n_out));
+    double *sig = REAL(signal);
+    double *ker = REAL(kernel);
+    double *o = REAL(out);
+    for (R_xlen_t i = 0; i < n_out; ++i) {
+      double acc = 0.0;
+      for (R_xlen_t j = 0; j < n_kernel; ++j) {
+        acc += sig[i + j] * ker[j];
+      }
+      o[i] = acc;
+    }
+    UNPROTECT(1);
+    return out;
+  }'
+callme::compile(code)
+c_result <- c_convolve(signal, kernel)
+
+# Check results are similar
+print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
+#> [1] TRUE
+
+# Benchmark
+bench::mark(
+        mojo = hellomojo::hellomojo_convolve(signal, kernel),
+        c = c_convolve(signal, kernel),
+        check = FALSE
+)    
+#> # A tibble: 2 × 6
+#>   expression      min   median `itr/sec` mem_alloc `gc/sec`
+#>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
+#> 1 mojo         1.35µs   2.96µs   314421.    7.84KB     31.4
+#> 2 c            1.47µs   3.76µs   299939.    7.84KB     30.0
+```
+
 ## References
 
-[Mojo Getting Started
-Guide](https://docs.modular.com/mojo/manual/get-started)  
-[pixi: Package and Environment Manager](https://pixi.sh/)
-
-[simpleCall example](https://github.com/coolbutuseless/simpleCall)
+- [Mojo Getting Started
+  Guide](https://docs.modular.com/mojo/manual/get-started)  
+- [pixi: Package and Environment Manager](https://pixi.sh/)
+- [simpleCall example](https://github.com/coolbutuseless/simpleCall)
