@@ -20,7 +20,7 @@ This package provides a setup to call [Mojo](https://www.modular.com/mojo) code 
 
 ## How It Works ?
 
-Mojo code is compile to shared libary, in our case `libhello.so`. A C file [`RC_hellomojo.c](src/RC_hellomojo.c) provides wrappers and registration so R can call the Mojo functions via the `.C` interface. R functions like `hellomojo()` call the native code using `.C()`. The [`configure`](configure) script uses [pixi](https://pixi.sh/) to install mojo and run the shared libary build.
+Mojo code is compile to shared libary, in our case `libhello.so`. A C file [`RC_hellomojo.c`](src/RC_hellomojo.c) provides wrappers and registration so R can call the Mojo functions via the `.C` interface. R functions like `hellomojo()` call the native code using `.C()`. The [`configure`](configure) script uses [pixi](https://pixi.sh/) to install mojo and run the shared libary build.
 
 ## Example
 
