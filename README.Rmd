@@ -34,6 +34,12 @@ the mojo code
 ```{r engine='bash', comment=''}
 cat inst/mojo/hellomojo/hellomojo.mojo
 ```
+the C wrappers
+
+```{r engine='bash', comment=''}
+cat  src/RC_hellomojo.c
+```
+
 ## Limitations to investigate
 
 Of course here we are using pixi to get Mojo binaries, installing 
