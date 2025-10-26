@@ -5,6 +5,8 @@
 extern void hello();
 extern double add( double a, double b);
 // c wrapper for the Mojo add function
+// we do this because we have no clue
+// how to pass pointers to mojo functions
 void add_(double *a, double *b, double *c) {
     *c = add(*a, *b);
 }
