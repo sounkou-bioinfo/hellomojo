@@ -152,7 +152,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.80784223  0.89323070  0.46564746  0.06064654 -0.47927430 -0.65572469
+#> [1] -0.3576851 -1.0373861 -0.2272094  0.9001496  1.1915693  0.6524356
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -162,8 +162,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         10.6µs   24.3µs    40735.    78.2KB     57.1
-#> 2 c              10µs   32.8µs    32070.    78.2KB     45.0
+#> 1 mojo        10.86µs   24.3µs    40831.    78.2KB     57.2
+#> 2 c            9.98µs   32.8µs    32125.    78.2KB     45.0
 ```
 
 ## Limitations to investigate
@@ -177,6 +177,10 @@ even though the toolchains were different.
 
 Additionally we have an additional C wrapping which may be not required
 if we pass the data directly to the mojo C callables.
+
+Final issue that the pixi strategy download the whole mojo runtime and
+toolchain (this amount to basically install llvm), leading a 1 GB
+install !
 
 ## References
 
