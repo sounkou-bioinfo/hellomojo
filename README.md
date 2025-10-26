@@ -84,10 +84,13 @@ on unix. Moreover we are calling the mojo shared object in the same
 adress space as R even though the toolchains were different.
 
 Additionally we have an additional C wrapping which may be not required
-if we pass the data directly to the mojo C callables.
+if we pass the data directly to the mojo C callables. Moreover we are
+using the `.C` interface, which involves a lot of
+[copies](https://github.com/coolbutuseless/simplec).
 
 ## References
 
 [Mojo Getting Started
 Guide](https://docs.modular.com/mojo/manual/get-started)  
-[pixi: Package and Environment Manager](https://pixi.sh/)
+[pixi: Package and Environment Manager](https://pixi.sh/) \[simpleC :\]
+(<https://github.com/coolbutuseless/simplec>)
