@@ -98,6 +98,8 @@ this on the R windows toolchain is not given. We should use uv or make a R packa
 
 Additionally we have an additional C wrapping which may be not required if we pass the data directly to the mojo C callables.
 
+Final issue that the pixi strategy download the whole mojo runtime and toolchain (this amount to basically install llvm), leading a 1 GB install  !
+
 
 ## References
 
