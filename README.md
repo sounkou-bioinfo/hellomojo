@@ -92,5 +92,6 @@ using the `.C` interface, which involves a lot of
 
 [Mojo Getting Started
 Guide](https://docs.modular.com/mojo/manual/get-started)  
-[pixi: Package and Environment Manager](https://pixi.sh/) \[simpleC :\]
-(<https://github.com/coolbutuseless/simplec>)
+[pixi: Package and Environment Manager](https://pixi.sh/)
+
+\[simpleC example\] (<https://github.com/coolbutuseless/simplec>)

@@ -52,4 +52,5 @@ Additionally we have an additional C wrapping which may be not required if we pa
 
 [Mojo Getting Started Guide](https://docs.modular.com/mojo/manual/get-started)  
 [pixi: Package and Environment Manager](https://pixi.sh/)
-[simpleC :] (https://github.com/coolbutuseless/simplec)
+
+[simpleC example] (https://github.com/coolbutuseless/simplec)
