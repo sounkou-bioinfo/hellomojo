@@ -2,7 +2,7 @@
 #'
 #' @export
 hellomojo <- function() {
-    .Call(hello)
+    invisible(.Call(hello,"hello from R via Mojo!"))
 }
 
 #' Add two numbers using the native 'add' function from the Mojo shared library

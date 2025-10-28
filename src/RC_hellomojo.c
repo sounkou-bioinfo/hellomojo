@@ -3,10 +3,17 @@
 #include <R_ext/Rdynload.h>
 
 // Declaration of the Mojo function
-extern void hello();
+extern void hello(const char *msg);
+
 // .Call wrapper for hello 
-SEXP hello_call() {
-    hello();
+SEXP hello_call(SEXP msg) {
+
+    if (!isString(msg) || LENGTH(msg) != 1)
+        Rf_error("msg must be a single string");
+
+    const char *cmsg = CHAR(STRING_ELT(msg, 0));
+    hello(cmsg);
+
     return R_NilValue;
 }
 extern double add(double a, double b);
@@ -35,8 +42,9 @@ SEXP convolve_call(SEXP signal, SEXP kernel) {
     UNPROTECT(1);
     return out;
 }
+
 static const R_CallMethodDef CallEntries[] = {
-    {"hello", (DL_FUNC) &hello_call, 0},
+    {"hello", (DL_FUNC) &hello_call, 1},
     {"add", (DL_FUNC) &add_call, 2},
     {"convolve", (DL_FUNC) &convolve_call, 2},
     {NULL, NULL, 0}

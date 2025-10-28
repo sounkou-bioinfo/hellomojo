@@ -16,8 +16,8 @@ Some boilerplate is required, but this can be automated.
 Mojo code is compiled to a shared library, in our case `libhello.so`. A
 C file [`RC_hellomojo.c`](src/RC_hellomojo.c) provides wrappers and
 registration so R can call the Mojo functions via the `.Call` interface.
-R functions like `hellomojo()` call the native code using `.Call()`(can
-t see the hello world in the Readme bc it is written in C stdout). The
+R functions like `hellomojo()` call the native code using `.Call()` and
+R C API can be called (somehow unsafely from Mojo). The
 [`configure`](configure) script uses [pixi](https://pixi.sh/) to install
 mojo and run the shared library build.
 
@@ -26,7 +26,7 @@ mojo and run the shared library build.
 ``` r
 # Load the package and call the native function
 hellomojo::hellomojo()
-#> NULL
+#> hello from R via Mojo!
 hellomojo::hellomojo_add(10, 30)
 #> [1] 40
 ```
@@ -36,11 +36,26 @@ the mojo code
 ``` bash
 cat inst/mojo/hellomojo/hellomojo.mojo
 # Mojo code for hello world and addition functions
-# exported to c 
+# exported to c
+# load necessary FFI types for accessing R C API functions
+# since we are in the same adress space as R when calling these functions
+from sys.ffi import DLHandle, c_char, c_int
+
+# Rprintf type: takes a C string pointer, returns int
+alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
 
 @export
-fn hello():
-    print("Hello, World!")
+fn hello(msg: UnsafePointer[c_char]):
+    try:
+        # Access global symbols in running R process
+        var handle: DLHandle = DLHandle("")
+        # Lookup Rprintf
+        var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
+        # Directly call Rprintf using the passed pointer
+        _ = Rprintf(msg)
+    except:
+        # Silently ignore if not running in R
+        return
 
 @export
 fn add( a: Float64, b: Float64) -> Float64:
@@ -68,10 +83,17 @@ cat src/RC_hellomojo.c
 #include <R_ext/Rdynload.h>
 
 // Declaration of the Mojo function
-extern void hello();
+extern void hello(const char *msg);
+
 // .Call wrapper for hello 
-SEXP hello_call() {
-    hello();
+SEXP hello_call(SEXP msg) {
+
+    if (!isString(msg) || LENGTH(msg) != 1)
+        Rf_error("msg must be a single string");
+
+    const char *cmsg = CHAR(STRING_ELT(msg, 0));
+    hello(cmsg);
+
     return R_NilValue;
 }
 extern double add(double a, double b);
@@ -100,8 +122,9 @@ SEXP convolve_call(SEXP signal, SEXP kernel) {
     UNPROTECT(1);
     return out;
 }
+
 static const R_CallMethodDef CallEntries[] = {
-    {"hello", (DL_FUNC) &hello_call, 0},
+    {"hello", (DL_FUNC) &hello_call, 1},
     {"add", (DL_FUNC) &add_call, 2},
     {"convolve", (DL_FUNC) &convolve_call, 2},
     {NULL, NULL, 0}
@@ -152,7 +175,8 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.3576851 -1.0373861 -0.2272094  0.9001496  1.1915693  0.6524356
+#> [1]  0.001118028  0.294194530 -0.365213251 -0.774286379 -0.364079747
+#> [6] -0.338618281
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -162,8 +186,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        10.86µs   24.3µs    40831.    78.2KB     57.2
-#> 2 c            9.98µs   32.8µs    32125.    78.2KB     45.0
+#> 1 mojo         22.6µs   31.7µs    25752.    78.2KB     36.1
+#> 2 c            11.6µs     31µs    29650.    78.2KB     41.6
 ```
 
 ## Limitations to investigate
@@ -171,20 +195,20 @@ bench::mark(
 Of course here we are using pixi to get Mojo binaries, installing this
 on the R windows toolchain is not given. We should use uv or make a R
 package that install pix. Moreover i could not add windown to the
-current pixi workspace. This package should work fine on unix. Moreover
-we are calling the mojo shared object in the same address space as R
-even though the toolchains were different.
+current pixi workspace. This package should work fine on unix. We are
+calling the mojo shared object in the same address space as R and
+calling R C API from mojo ffi even though the toolchains were different.
 
 Additionally we have an additional C wrapping which may be not required
 if we pass the data directly to the mojo C callables.
 
 Final issue that the pixi strategy download the whole mojo runtime and
 toolchain (this amount to basically install llvm), leading a 1 GB
-install !
+install \!
 
 ## References
 
-- [Mojo Getting Started
-  Guide](https://docs.modular.com/mojo/manual/get-started)  
-- [pixi: Package and Environment Manager](https://pixi.sh/)
-- [simpleCall example](https://github.com/coolbutuseless/simpleCall)
+  - [Mojo Getting Started
+    Guide](https://docs.modular.com/mojo/manual/get-started)  
+  - [pixi: Package and Environment Manager](https://pixi.sh/)
+  - [simpleCall example](https://github.com/coolbutuseless/simpleCall)

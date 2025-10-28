@@ -1,9 +1,24 @@
 # Mojo code for hello world and addition functions
-# exported to c 
+# exported to c
+# load necessary FFI types for accessing R C API functions
+# since we are in the same adress space as R when calling these functions
+from sys.ffi import DLHandle, c_char, c_int
+
+# Rprintf type: takes a C string pointer, returns int
+alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
 
 @export
-fn hello():
-    print("Hello, World!")
+fn hello(msg: UnsafePointer[c_char]):
+    try:
+        # Access global symbols in running R process
+        var handle: DLHandle = DLHandle("")
+        # Lookup Rprintf
+        var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
+        # Directly call Rprintf using the passed pointer
+        _ = Rprintf(msg)
+    except:
+        # Silently ignore if not running in R
+        return
 
 @export
 fn add( a: Float64, b: Float64) -> Float64:
