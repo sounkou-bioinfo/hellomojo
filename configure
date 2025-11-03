@@ -2,12 +2,17 @@
 thisDir=$(dirname "$0")
 thisDir=`realpath $thisDir`
 
-# Check if HELLOMOJO_NO_BUILD is set - skip Mojo build
-if [ -n "${HELLOMOJO_NO_BUILD}" ]; then
-    echo "HELLOMOJO_NO_BUILD is set - skipping Mojo build" >&2
-    cp ${thisDir}/src/Makevars.in ${thisDir}/src/Makevars
+# Default: skip Mojo build unless HELLOMOJO_BUILD is explicitly set
+if [ -z "${HELLOMOJO_BUILD}" ]; then
+    echo "HELLOMOJO_BUILD not set - skipping Mojo build (set HELLOMOJO_BUILD=1 to enable)" >&2
+    # Generate Makevars without Mojo
+    sed -e 's|@MOJO_CFLAGS@|-DHELLOMOJO_NO_BUILD|' \
+        -e 's|@MOJO_LIBS@||' \
+        ${thisDir}/src/Makevars.in > ${thisDir}/src/Makevars
     exit 0
 fi
+
+echo "HELLOMOJO_BUILD is set - building Mojo shared library" >&2
 
 # install mojo and pixi if necessary
 pixi="${HOME}/.pixi/bin/pixi"
@@ -40,4 +45,7 @@ $pixi run mojo build hellomojo.mojo \
 
 ls ${thisDir}/inst/libs/libhello.${libsuffix} || exit 1
 
-cp ${thisDir}/src/Makevars.in ${thisDir}/src/Makevars
+# Generate Makevars with Mojo
+sed -e 's|@MOJO_CFLAGS@||' \
+    -e "s|@MOJO_LIBS@|-L\$(ThisDIR)/../inst/libs -lhello -Wl,-rpath,'\$\$ORIGIN'|" \
+    ${thisDir}/src/Makevars.in > ${thisDir}/src/Makevars

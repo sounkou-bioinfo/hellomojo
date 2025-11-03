@@ -27,26 +27,28 @@ The package supports two installation modes:
 
 ### Full Build (Default)
 
-Compiles Mojo shared library and links to it for high performance:
-
-``` r
-install.packages(".", repos = NULL, type = "source")
-```
-
-### R-Only Build
+### R-Only Build (Default)
 
 Skips Mojo compilation and uses pure R fallback implementations:
 
 ``` r
-Sys.setenv(HELLOMOJO_NO_BUILD = "1")
 install.packages(".", repos = NULL, type = "source")
 ```
 
-This is useful for: - Systems without Mojo/pixi - Quick testing without
-the ~1GB Mojo toolchain
+This is the default for maximum compatibility - no Mojo/pixi required.
 
-When built without Mojo this functions error: - `hellomojo_add()` -
-`hellomojo_convolve()` - `hellomojo()`
+### Full Build with Mojo
+
+Compiles Mojo shared library and links to it for high performance:
+
+``` r
+Sys.setenv(HELLOMOJO_BUILD = "1")
+install.packages(".", repos = NULL, type = "source")
+```
+
+When built without Mojo: - `hellomojo_add()` falls back to R’s `a + b` -
+`hellomojo_convolve()` falls back to an R loop implementation -
+`hellomojo()` will error (no fallback available)
 
 ## Example
 
@@ -216,7 +218,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.07460801  0.41984665 -0.06868860  0.17216379  0.92900705  1.00360628
+#> [1] -0.2267525  0.8457091  0.2924366 -0.4692865 -0.1628495  1.0031528
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -226,8 +228,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         10.7µs   24.4µs    40716.    78.2KB     57.1
-#> 2 c              10µs   32.9µs    31897.    78.2KB     44.7
+#> 1 mojo        10.53µs   24.4µs    40844.    78.2KB     57.3
+#> 2 c            9.97µs   32.9µs    32049.    78.2KB     44.9
 ```
 
 ## Limitations to investigate
