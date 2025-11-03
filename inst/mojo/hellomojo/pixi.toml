@@ -8,4 +8,10 @@ version = "0.1.0"
 [tasks]
 
 [dependencies]
-mojo = ">=0.25.7.0.dev2025110305,<0.26"
+mojo = "==0.25.6"
+
+[target.osx-arm64.dependencies]
+clang = ">=21.1.4,<22"
+
+[target.linux-aarch64.dependencies]
+gcc = ">=15.2.0,<15.3"

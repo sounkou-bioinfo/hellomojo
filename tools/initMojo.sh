@@ -15,8 +15,11 @@ cd ${thisDir}/../inst/mojo || mkdir -p ${thisDir}/../inst/mojo
 cd ${thisDir}/../inst/mojo
 $pixi init hellomojo -c https://conda.modular.com/max-nightly/ -c conda-forge || true
 cd hellomojo || exit 1
-$pixi add mojo || true
+$pixi add "mojo==0.25.6" || true
 $pixi run mojo --version
+# add macos platform
+$pixi add  --platform osx-arm64 clang
+$pixi add --platform linux-aarch64 gcc
 #$pixi run mojo hello.mojo
 $pixi run mojo build hello.mojo  --emit shared-lib -o hello.so
 ls hello.so
