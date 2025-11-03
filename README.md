@@ -214,7 +214,8 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.2814557 -0.1837509 -0.1537883 -0.2562482 -0.1701348  0.1851902
+#> [1]  0.005911381 -0.125591691 -0.596131671 -0.879179374 -0.821374156
+#> [6] -0.261991314
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -224,8 +225,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         10.8µs   24.4µs    40568.    78.2KB     56.9
-#> 2 c              10µs   32.9µs    31947.    78.2KB     44.8
+#> 1 mojo        10.91µs   24.4µs    40484.    78.2KB     56.8
+#> 2 c            9.96µs   32.9µs    32019.    78.2KB     44.9
 ```
 
 ## Dynamic Mojo Compilation
@@ -261,14 +262,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038
+#> Creating virtual environment at: /tmp/RtmpuBosdK/mojo_venv_1179764d9c9035
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpuBosdK/mojo_venv_1179764d9c9035/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038"
+#> [1] "691M\t/tmp/RtmpuBosdK/mojo_venv_1179764d9c9035"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -276,8 +277,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038/bin/mojo
-#> Parsing Mojo file: /tmp/RtmpIB80FD/file11778e2c8431c2.mojo
+#> Using Mojo: /tmp/RtmpuBosdK/mojo_venv_1179764d9c9035/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpuBosdK/file11797680082f0.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -288,7 +289,7 @@ hellomojo::mojo_compile(
 #> Generating C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/RtmpIB80FD/mojo_compile_11778e538c99c4/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpuBosdK/mojo_compile_1179765304a713/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:
@@ -306,7 +307,9 @@ unlink(venv_path, recursive = TRUE)
 This parses the Mojo file, extracts all `@export` functions, generates C
 wrappers, compiles everything, and creates R functions automatically.
 Only `UnsafePointer` types and scalar Int/Float types are currently
-supported. This is quite brittle now.
+supported. This is quite brittle now. We should use a proper Mojo parser
+or dump MLIR representations like in this
+[gist](https://gist.github.com/soraros/44d56698cb20a6c5db3160f13ca81675)
 
 ## Limitations to investigate
 
