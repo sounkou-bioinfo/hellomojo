@@ -22,6 +22,34 @@ This package provides a setup to call [Mojo](https://www.modular.com/mojo) code 
 
 Mojo code is compiled to a shared library, in our case `libhello.so`. A C file [`RC_hellomojo.c`](src/RC_hellomojo.c) provides wrappers and registration so R can call the Mojo functions via the `.Call` interface. R functions like `hellomojo()` call the native code using `.Call()` and R C API can be called (somehow unsafely from Mojo). The [`configure`](configure) script uses [pixi](https://pixi.sh/) to install mojo and run the shared library build.
 
+## Build Modes
+
+The package supports two installation modes:
+
+### Full Build (Default)
+Compiles Mojo shared library and links to it for high performance:
+
+```r
+install.packages(".", repos = NULL, type = "source")
+```
+
+### R-Only Build
+Skips Mojo compilation and uses pure R fallback implementations:
+
+```r
+Sys.setenv(HELLOMOJO_NO_BUILD = "1")
+install.packages(".", repos = NULL, type = "source")
+```
+
+This is useful for:
+- Systems without Mojo/pixi
+- Quick testing without the ~1GB Mojo toolchain
+
+When built without Mojo this functions error:
+- `hellomojo_add()` 
+- `hellomojo_convolve()` 
+- `hellomojo()`
+
 ## Example
 
 ```{r}

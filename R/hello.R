@@ -1,13 +1,4 @@
-.has_mojo <- function() {
-    lib_path <- system.file("libs", package = "hellomojo")
-    if (lib_path == "") {
-        return(FALSE)
-    }
-
-    libsuffix <- if (Sys.info()["sysname"] == "Darwin") "dylib" else "so"
-    file.exists(file.path(lib_path, paste0("libhello.", libsuffix)))
-}
-
+#' Hello from Mojo
 #' Call the native 'hello' function from the Mojo shared library
 #'
 #' @export
@@ -30,15 +21,5 @@ hellomojo_add <- function(a, b) {
 #' @return Numeric vector (convolution result)
 #' @export
 hellomojo_convolve <- function(signal, kernel) {
-    if (!.has_mojo()) {
-        # R fallback
-        signal <- as.numeric(signal)
-        kernel <- as.numeric(kernel)
-        n_out <- length(signal) - length(kernel) + 1
-        vapply(seq_len(n_out), function(i) {
-            sum(signal[i:(i + length(kernel) - 1)] * kernel)
-        }, numeric(1))
-    } else {
-        .Call(convolve, as.numeric(signal), as.numeric(kernel))
-    }
+    .Call(convolve, as.numeric(signal), as.numeric(kernel))
 }

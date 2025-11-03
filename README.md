@@ -21,6 +21,33 @@ R C API can be called (somehow unsafely from Mojo). The
 [`configure`](configure) script uses [pixi](https://pixi.sh/) to install
 mojo and run the shared library build.
 
+## Build Modes
+
+The package supports two installation modes:
+
+### Full Build (Default)
+
+Compiles Mojo shared library and links to it for high performance:
+
+``` r
+install.packages(".", repos = NULL, type = "source")
+```
+
+### R-Only Build
+
+Skips Mojo compilation and uses pure R fallback implementations:
+
+``` r
+Sys.setenv(HELLOMOJO_NO_BUILD = "1")
+install.packages(".", repos = NULL, type = "source")
+```
+
+This is useful for: - Systems without Mojo/pixi - Quick testing without
+the ~1GB Mojo toolchain
+
+When built without Mojo this functions error: - `hellomojo_add()` -
+`hellomojo_convolve()` - `hellomojo()`
+
 ## Example
 
 ``` r
@@ -82,12 +109,16 @@ cat src/RC_hellomojo.c
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 
-// Declaration of the Mojo function
+#ifndef HELLOMOJO_NO_BUILD
 extern void hello(const char *msg);
+extern double add(double a, double b);
+extern void convolve(const double *signal, int signal_len,
+        const double *kernel, int kernel_len, double *output);
+#endif
 
 // .Call wrapper for hello 
 SEXP hello_call(SEXP msg) {
-
+#ifndef HELLOMOJO_NO_BUILD
     if (!isString(msg) || LENGTH(msg) != 1)
         Rf_error("msg must be a single string");
 
@@ -95,21 +126,27 @@ SEXP hello_call(SEXP msg) {
     hello(cmsg);
 
     return R_NilValue;
+#else
+    Rf_error("Mojo library not available");
+    return R_NilValue;
+#endif
 }
-extern double add(double a, double b);
 // .Call wrapper for the Mojo add function
 SEXP add_call(SEXP a, SEXP b) {
+#ifndef HELLOMOJO_NO_BUILD
     double ad = asReal(a);
     double bd = asReal(b);
     double result = add(ad, bd);
     return ScalarReal(result);
+#else
+    Rf_error("Mojo library not available");
+    return R_NilValue;
+#endif
 }
 
-// Declaration of the Mojo convolution function
-extern void convolve(const double *signal, int signal_len,
-        const double *kernel, int kernel_len, double *output);
 // .Call wrapper for the Mojo convolution function
 SEXP convolve_call(SEXP signal, SEXP kernel) {
+#ifndef HELLOMOJO_NO_BUILD
     R_xlen_t n_signal = XLENGTH(signal);
     R_xlen_t n_kernel = XLENGTH(kernel);
     if (!isReal(signal) || !isReal(kernel))
@@ -121,6 +158,10 @@ SEXP convolve_call(SEXP signal, SEXP kernel) {
     convolve(REAL(signal), n_signal, REAL(kernel), n_kernel, REAL(out));
     UNPROTECT(1);
     return out;
+#else
+    Rf_error("Mojo library not available");
+    return R_NilValue;
+#endif
 }
 
 static const R_CallMethodDef CallEntries[] = {
@@ -175,7 +216,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.04609410 -0.09489900  0.46683172  0.35256374 -0.21324621  0.06860231
+#> [1]  0.07460801  0.41984665 -0.06868860  0.17216379  0.92900705  1.00360628
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -185,8 +226,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo           11µs   24.4µs    40547.    78.2KB     56.8
-#> 2 c            9.97µs   32.8µs    32042.    78.2KB     44.9
+#> 1 mojo         10.7µs   24.4µs    40716.    78.2KB     57.1
+#> 2 c              10µs   32.9µs    31897.    78.2KB     44.7
 ```
 
 ## Limitations to investigate
