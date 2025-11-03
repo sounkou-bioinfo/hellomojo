@@ -175,8 +175,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.001118028  0.294194530 -0.365213251 -0.774286379 -0.364079747
-#> [6] -0.338618281
+#> [1] -0.5259435 -0.1107400  0.2996034  0.6329625  0.6389078  0.2968331
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -186,8 +185,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         22.6µs   31.7µs    25752.    78.2KB     36.1
-#> 2 c            11.6µs     31µs    29650.    78.2KB     41.6
+#> 1 mojo        10.56µs   24.4µs    40674.    78.2KB     57.0
+#> 2 c            9.98µs   32.9µs    32084.    78.2KB     45.0
 ```
 
 ## Limitations to investigate
@@ -204,11 +203,11 @@ if we pass the data directly to the mojo C callables.
 
 Final issue that the pixi strategy download the whole mojo runtime and
 toolchain (this amount to basically install llvm), leading a 1 GB
-install \!
+install !
 
 ## References
 
-  - [Mojo Getting Started
-    Guide](https://docs.modular.com/mojo/manual/get-started)  
-  - [pixi: Package and Environment Manager](https://pixi.sh/)
-  - [simpleCall example](https://github.com/coolbutuseless/simpleCall)
+- [Mojo Getting Started
+  Guide](https://docs.modular.com/mojo/manual/get-started)  
+- [pixi: Package and Environment Manager](https://pixi.sh/)
+- [simpleCall example](https://github.com/coolbutuseless/simpleCall)
