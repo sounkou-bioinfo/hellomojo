@@ -25,8 +25,6 @@ mojo and run the shared library build.
 
 The package supports two installation modes:
 
-### Full Build (Default)
-
 ### R-Only Build (Default)
 
 Skips Mojo compilation and uses pure R fallback implementations:
@@ -37,6 +35,9 @@ install.packages(".", repos = NULL, type = "source")
 
 This is the default for maximum compatibility - no Mojo/pixi required.
 
+When built without Mojo these functions will error: -
+`hellomojo_add()` - `hellomojo_convolve()` - `hellomojo()`
+
 ### Full Build with Mojo
 
 Compiles Mojo shared library and links to it for high performance:
@@ -46,9 +47,24 @@ Sys.setenv(HELLOMOJO_BUILD = "1")
 install.packages(".", repos = NULL, type = "source")
 ```
 
-When built without Mojo: - `hellomojo_add()` falls back to R’s `a + b` -
-`hellomojo_convolve()` falls back to an R loop implementation -
-`hellomojo()` will error (no fallback available)
+## Installing Mojo
+
+The package provides utilities to install Mojo via pip (not pixi):
+
+``` r
+# Install Mojo nightly in a virtual environment
+mojo_install(venv = ".venv/mojo", nightly = TRUE)
+
+# Check installation
+mojo_info(venv = ".venv/mojo")
+
+# Compile the Mojo library
+mojo_build_package(venv = ".venv/mojo")
+
+# Now rebuild the R package with Mojo support
+Sys.setenv(HELLOMOJO_BUILD = "1")
+install.packages(".", repos = NULL, type = "source")
+```
 
 ## Example
 
@@ -218,7 +234,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.2267525  0.8457091  0.2924366 -0.4692865 -0.1628495  1.0031528
+#> [1] -1.3443547 -1.4811734 -0.6987027  0.3527072  0.2501751 -0.4427653
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -228,8 +244,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        10.53µs   24.4µs    40844.    78.2KB     57.3
-#> 2 c            9.97µs   32.9µs    32049.    78.2KB     44.9
+#> 1 mojo         10.8µs   24.5µs    40665.    78.2KB     57.0
+#> 2 c              10µs   32.8µs    32159.    78.2KB     45.1
 ```
 
 ## Limitations to investigate
