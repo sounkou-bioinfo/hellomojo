@@ -45,7 +45,7 @@ mojo_compile("inst/mojo/hellomojo/hellomojo.mojo", venv = ".venv/mojo")
 ```
 
 
-## Example (with pre-compiled)
+## Example with pre-compiled native functions
 
 ```{r}
 # Load the package and call the native function
@@ -147,6 +147,10 @@ writeLines(mojo_code, temp_mojo)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
 
+# Check the size of the Mojo installation
+venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
+venv_size
+
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
   temp_mojo,
@@ -167,14 +171,11 @@ This parses the Mojo file, extracts all `@export` functions, generates C wrapper
 compiles everything, and creates R functions automatically. Only `UnsafePointer` types
 and scalar Int/Float types are currently supported. This is quite brittle now.
 
-**Note**: This requires Mojo to be installed via `mojo_install()` first. The installation
-downloads ~1GB of dependencies, so it's not run in this README by default.
-
 
 
 ## Limitations to investigate
 
-The package now offers two approaches: the original pixi-based static compilation and a new dynamic compilation system using Python virtual environments. For static compilation, we use pixi to get Mojo binaries, but installing this on the R Windows toolchain is not straightforward. We should consider using uv or creating an R package that installs pixi. Moreover, Windows support could not be added to the current pixi workspace (because Mojo only supports WSL). This package should work fine on Unix systems.
+The package now offers two approaches: the original pixi-based static compilation and a  dynamic compilation system using Python virtual environments. For compilation at installation time, we use pixi to get Mojo binaries, but installing this on the R Windows toolchain is not straightforward. We should consider using uv or creating an R package that installs pixi. Moreover, Windows support could not be added to the current pixi workspace (because Mojo only supports WSL). This package should work fine on Unix systems.
 
 The dynamic compilation approach (`mojo_compile()`) provides a more lightweight alternative that only requires a Python virtual environment with Mojo installed, avoiding the need for pixi entirely. This makes the installation much more manageable and potentially Windows-compatible (if Mojo support windows).
 

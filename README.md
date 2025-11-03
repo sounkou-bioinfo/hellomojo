@@ -46,7 +46,7 @@ mojo_install(venv = ".venv/mojo", nightly = TRUE)
 mojo_compile("inst/mojo/hellomojo/hellomojo.mojo", venv = ".venv/mojo")
 ```
 
-## Example (with pre-compiled)
+## Example with pre-compiled native functions
 
 ``` r
 # Load the package and call the native function
@@ -214,7 +214,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -1.0016511 -1.1238237 -0.9378897  0.2996006  1.2621090  0.6980023
+#> [1] -0.2814557 -0.1837509 -0.1537883 -0.2562482 -0.1701348  0.1851902
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -224,8 +224,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo           11µs   24.4µs    40692.    78.2KB     57.0
-#> 2 c            9.97µs   32.8µs    32041.    78.2KB     44.9
+#> 1 mojo         10.8µs   24.4µs    40568.    78.2KB     56.9
+#> 2 c              10µs   32.9µs    31947.    78.2KB     44.8
 ```
 
 ## Dynamic Mojo Compilation
@@ -261,9 +261,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/Rtmp2dgpWN/mojo_venv_11726d4cee403e
+#> Creating virtual environment at: /tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/Rtmp2dgpWN/mojo_venv_11726d4cee403e/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038/bin/mojo
+
+# Check the size of the Mojo installation
+venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
+venv_size
+#> [1] "691M\t/tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -271,8 +276,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/Rtmp2dgpWN/mojo_venv_11726d4cee403e/bin/mojo
-#> Parsing Mojo file: /tmp/Rtmp2dgpWN/file11726de99b81.mojo
+#> Using Mojo: /tmp/RtmpIB80FD/mojo_venv_11778e5c5fa038/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpIB80FD/file11778e2c8431c2.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -283,7 +288,7 @@ hellomojo::mojo_compile(
 #> Generating C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/Rtmp2dgpWN/mojo_compile_11726d7c36ff2f/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpIB80FD/mojo_compile_11778e538c99c4/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:
@@ -303,20 +308,16 @@ wrappers, compiles everything, and creates R functions automatically.
 Only `UnsafePointer` types and scalar Int/Float types are currently
 supported. This is quite brittle now.
 
-**Note**: This requires Mojo to be installed via `mojo_install()` first.
-The installation downloads ~1GB of dependencies, so it’s not run in this
-README by default.
-
 ## Limitations to investigate
 
 The package now offers two approaches: the original pixi-based static
-compilation and a new dynamic compilation system using Python virtual
-environments. For static compilation, we use pixi to get Mojo binaries,
-but installing this on the R Windows toolchain is not straightforward.
-We should consider using uv or creating an R package that installs pixi.
-Moreover, Windows support could not be added to the current pixi
-workspace (because Mojo only supports WSL). This package should work
-fine on Unix systems.
+compilation and a dynamic compilation system using Python virtual
+environments. For compilation at installation time, we use pixi to get
+Mojo binaries, but installing this on the R Windows toolchain is not
+straightforward. We should consider using uv or creating an R package
+that installs pixi. Moreover, Windows support could not be added to the
+current pixi workspace (because Mojo only supports WSL). This package
+should work fine on Unix systems.
 
 The dynamic compilation approach (`mojo_compile()`) provides a more
 lightweight alternative that only requires a Python virtual environment
