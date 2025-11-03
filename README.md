@@ -175,7 +175,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.5259435 -0.1107400  0.2996034  0.6329625  0.6389078  0.2968331
+#> [1]  0.04609410 -0.09489900  0.46683172  0.35256374 -0.21324621  0.06860231
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -185,8 +185,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        10.56µs   24.4µs    40674.    78.2KB     57.0
-#> 2 c            9.98µs   32.9µs    32084.    78.2KB     45.0
+#> 1 mojo           11µs   24.4µs    40547.    78.2KB     56.8
+#> 2 c            9.97µs   32.8µs    32042.    78.2KB     44.9
 ```
 
 ## Limitations to investigate
