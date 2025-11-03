@@ -2,12 +2,16 @@
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 
-// Declaration of the Mojo function
+#ifndef HELLOMOJO_NO_BUILD
 extern void hello(const char *msg);
+extern double add(double a, double b);
+extern void convolve(const double *signal, int signal_len,
+        const double *kernel, int kernel_len, double *output);
+#endif
 
 // .Call wrapper for hello 
 SEXP hello_call(SEXP msg) {
-
+#ifndef HELLOMOJO_NO_BUILD
     if (!isString(msg) || LENGTH(msg) != 1)
         Rf_error("msg must be a single string");
 
@@ -15,21 +19,27 @@ SEXP hello_call(SEXP msg) {
     hello(cmsg);
 
     return R_NilValue;
+#else
+    Rf_error("Mojo library not available");
+    return R_NilValue;
+#endif
 }
-extern double add(double a, double b);
 // .Call wrapper for the Mojo add function
 SEXP add_call(SEXP a, SEXP b) {
+#ifndef HELLOMOJO_NO_BUILD
     double ad = asReal(a);
     double bd = asReal(b);
     double result = add(ad, bd);
     return ScalarReal(result);
+#else
+    Rf_error("Mojo library not available");
+    return R_NilValue;
+#endif
 }
 
-// Declaration of the Mojo convolution function
-extern void convolve(const double *signal, int signal_len,
-        const double *kernel, int kernel_len, double *output);
 // .Call wrapper for the Mojo convolution function
 SEXP convolve_call(SEXP signal, SEXP kernel) {
+#ifndef HELLOMOJO_NO_BUILD
     R_xlen_t n_signal = XLENGTH(signal);
     R_xlen_t n_kernel = XLENGTH(kernel);
     if (!isReal(signal) || !isReal(kernel))
@@ -41,6 +51,10 @@ SEXP convolve_call(SEXP signal, SEXP kernel) {
     convolve(REAL(signal), n_signal, REAL(kernel), n_kernel, REAL(out));
     UNPROTECT(1);
     return out;
+#else
+    Rf_error("Mojo library not available");
+    return R_NilValue;
+#endif
 }
 
 static const R_CallMethodDef CallEntries[] = {

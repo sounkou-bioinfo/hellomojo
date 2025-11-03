@@ -1,2 +1,8 @@
 ThisDIR = $(CURDIR)
-PKG_LIBS = -L$(ThisDIR)/../inst/libs -lhello -Wl,-rpath,'$$ORIGIN'
+
+ifdef HELLOMOJO_NO_BUILD
+  PKG_CFLAGS = -DHELLOMOJO_NO_BUILD
+  PKG_LIBS =
+else
+  PKG_LIBS = -L$(ThisDIR)/../inst/libs -lhello -Wl,-rpath,'$$ORIGIN'
+endif

@@ -1,8 +1,16 @@
 #!/bin/sh
-# install mojo and pixi if necessary
-pixi="${HOME}/.pixi/bin/pixi"
 thisDir=$(dirname "$0")
 thisDir=`realpath $thisDir`
+
+# Check if HELLOMOJO_NO_BUILD is set - skip Mojo build
+if [ -n "${HELLOMOJO_NO_BUILD}" ]; then
+    echo "HELLOMOJO_NO_BUILD is set - skipping Mojo build" >&2
+    cp ${thisDir}/src/Makevars.in ${thisDir}/src/Makevars
+    exit 0
+fi
+
+# install mojo and pixi if necessary
+pixi="${HOME}/.pixi/bin/pixi"
 command -v $pixi >/dev/null 2>&1 || { 
     echo "pixi not found, installing pixi..." >&2; 
     curl -fsSL https://pixi.sh/install.sh | sh
