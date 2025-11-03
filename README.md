@@ -21,52 +21,32 @@ R C API can be called (somehow unsafely from Mojo). The
 [`configure`](configure) script uses [pixi](https://pixi.sh/) to install
 mojo and run the shared library build.
 
-## Build Modes
+## Installation
 
-The package supports two installation modes:
-
-### R-Only Build (Default)
-
-Skips Mojo compilation and uses pure R fallback implementations:
+By default, the package installs without Mojo installation via pixi
 
 ``` r
 install.packages(".", repos = NULL, type = "source")
 ```
 
-This is the default for maximum compatibility - no Mojo/pixi required.
-
-When built without Mojo these functions will error: -
-`hellomojo_add()` - `hellomojo_convolve()` - `hellomojo()`
-
-### Full Build with Mojo
-
-Compiles Mojo shared library and links to it for high performance:
+To enable compiling the Mojo functions with the RC code, set
+`HELLOMOJO_BUILD=1` before installation. The configure script will
+automatically install pixi and compile the hellomojo shared library:
 
 ``` r
 Sys.setenv(HELLOMOJO_BUILD = "1")
 install.packages(".", repos = NULL, type = "source")
 ```
 
-## Installing Mojo
-
-The package provides utilities to install Mojo via pip (not pixi):
+For dynamic compilation workflows similar to `callme::compile()`,
+install Mojo in a virtual environment first:
 
 ``` r
-# Install Mojo nightly in a virtual environment
 mojo_install(venv = ".venv/mojo", nightly = TRUE)
-
-# Check installation
-mojo_info(venv = ".venv/mojo")
-
-# Compile the Mojo library
-mojo_build_package(venv = ".venv/mojo")
-
-# Now rebuild the R package with Mojo support
-Sys.setenv(HELLOMOJO_BUILD = "1")
-install.packages(".", repos = NULL, type = "source")
+mojo_compile("inst/mojo/hellomojo/hellomojo.mojo", venv = ".venv/mojo")
 ```
 
-## Example
+## Example (with pre-compiled)
 
 ``` r
 # Load the package and call the native function
@@ -234,7 +214,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -1.3443547 -1.4811734 -0.6987027  0.3527072  0.2501751 -0.4427653
+#> [1] -1.0016511 -1.1238237 -0.9378897  0.2996006  1.2621090  0.6980023
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -244,25 +224,114 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         10.8µs   24.5µs    40665.    78.2KB     57.0
-#> 2 c              10µs   32.8µs    32159.    78.2KB     45.1
+#> 1 mojo           11µs   24.4µs    40692.    78.2KB     57.0
+#> 2 c            9.97µs   32.8µs    32041.    78.2KB     44.9
 ```
+
+## Dynamic Mojo Compilation
+
+You can also compile and load Mojo code dynamically, similar to
+`callme::compile()`:
+
+``` r
+# Create a simple Mojo file
+mojo_code <- '
+from sys.ffi import DLHandle, c_char, c_int
+alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
+@export
+fn multiply(x: Float64, y: Float64) -> Float64:
+    return x * y
+
+@export
+fn greet(name: UnsafePointer[c_char]):
+
+    alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
+    try:
+        var handle: DLHandle = DLHandle("")
+        var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
+        _ = Rprintf(name)
+    except:
+        return
+'
+
+# Write to temporary file
+temp_mojo <- tempfile(fileext = ".mojo")
+writeLines(mojo_code, temp_mojo)
+
+# Install Mojo in a temporary venv (only needed once)
+venv_path <- tempfile(pattern = "mojo_venv_")
+hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
+#> Creating virtual environment at: /tmp/Rtmp2dgpWN/mojo_venv_11726d4cee403e
+#> Installing Mojo nightly build...
+#> Mojo installed successfully at: /tmp/Rtmp2dgpWN/mojo_venv_11726d4cee403e/bin/mojo
+
+# Compile the Mojo file and get R functions
+hellomojo::mojo_compile(
+  temp_mojo,
+  venv = venv_path,
+  verbosity = 1
+)
+#> Using Mojo: /tmp/Rtmp2dgpWN/mojo_venv_11726d4cee403e/bin/mojo
+#> Parsing Mojo file: /tmp/Rtmp2dgpWN/file11726de99b81.mojo
+#> Parsing arg: [ x: Float64 ]
+#>   -> name=[ x ] type=[ Float64 ]
+#> Parsing arg: [ y: Float64 ]
+#>   -> name=[ y ] type=[ Float64 ]
+#> Parsing arg: [ name: UnsafePointer[c_char] ]
+#>   -> name=[ name ] type=[ UnsafePointer[c_char] ]
+#> Compiling Mojo to shared library...
+#> Generating C wrappers...
+#> Compiling C wrappers...
+#> Loading compiled library...
+#> Loading DLL: /tmp/Rtmp2dgpWN/mojo_compile_11726d7c36ff2f/mojo_wrappers.so
+#> Success! 2 function(s) available.
+
+# Now the @export functions are available:
+multiply(6.0, 7.0)
+#> [1] 42
+greet("Hello from dynamically compiled Mojo!\\n")
+#> Hello from dynamically compiled Mojo!\n
+#> NULL
+
+# Clean up
+unlink(temp_mojo)
+unlink(venv_path, recursive = TRUE)
+```
+
+This parses the Mojo file, extracts all `@export` functions, generates C
+wrappers, compiles everything, and creates R functions automatically.
+Only `UnsafePointer` types and scalar Int/Float types are currently
+supported. This is quite brittle now.
+
+**Note**: This requires Mojo to be installed via `mojo_install()` first.
+The installation downloads ~1GB of dependencies, so it’s not run in this
+README by default.
 
 ## Limitations to investigate
 
-Of course here we are using pixi to get Mojo binaries, installing this
-on the R windows toolchain is not given. We should use uv or make a R
-package that install pix. Moreover i could not add windown to the
-current pixi workspace. This package should work fine on unix. We are
-calling the mojo shared object in the same address space as R and
-calling R C API from mojo ffi even though the toolchains were different.
+The package now offers two approaches: the original pixi-based static
+compilation and a new dynamic compilation system using Python virtual
+environments. For static compilation, we use pixi to get Mojo binaries,
+but installing this on the R Windows toolchain is not straightforward.
+We should consider using uv or creating an R package that installs pixi.
+Moreover, Windows support could not be added to the current pixi
+workspace (because Mojo only supports WSL). This package should work
+fine on Unix systems.
 
-Additionally we have an additional C wrapping which may be not required
-if we pass the data directly to the mojo C callables.
+The dynamic compilation approach (`mojo_compile()`) provides a more
+lightweight alternative that only requires a Python virtual environment
+with Mojo installed, avoiding the need for pixi entirely. This makes the
+installation much more manageable and potentially Windows-compatible (if
+Mojo support windows).
 
-Final issue that the pixi strategy download the whole mojo runtime and
-toolchain (this amount to basically install llvm), leading a 1 GB
-install !
+We are calling the Mojo shared object in the same address space as R and
+calling the R C API from Mojo FFI, even though the toolchains are
+different.
+
+The main limitation remains that the pixi strategy downloads the entire
+Mojo runtime and toolchain (essentially installing LLVM), leading to a
+~1GB install. The dynamic approach mitigates this by allowing users to
+manage Mojo installation separately at runtime(still big tough).
 
 ## References
 

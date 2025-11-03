@@ -2,10 +2,12 @@
 % Please edit documentation in R/hello.R
 \name{hellomojo}
 \alias{hellomojo}
-\title{Call the native 'hello' function from the Mojo shared library}
+\title{Hello from Mojo
+Call the native 'hello' function from the Mojo shared library}
 \usage{
 hellomojo()
 }
 \description{
+Hello from Mojo
 Call the native 'hello' function from the Mojo shared library
 }

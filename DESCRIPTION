@@ -10,7 +10,7 @@ License: GPL (>= 3)
 Suggests:
     callme,
     bench
-SystemRequirements: mojo installation (https://docs.modular.com/mojo/manual/install) via pixi or python3-pip
+SystemRequirements: mojo installation (https://docs.modular.com/mojo/manual/install) via pixi or python3-venv and python3-pip
 OS_type: unix
 Encoding: UTF-8
 URL: https://github.com/sounkou-bioinfo
