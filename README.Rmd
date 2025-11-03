@@ -162,7 +162,6 @@ hellomojo::mojo_compile(
 multiply(6.0, 7.0)
 greet("Hello from dynamically compiled Mojo!\\n")
 
-# Clean up
 unlink(temp_mojo)
 unlink(venv_path, recursive = TRUE)
 ```
@@ -170,6 +169,7 @@ unlink(venv_path, recursive = TRUE)
 This parses the Mojo file, extracts all `@export` functions, generates C wrappers,
 compiles everything, and creates R functions automatically. Only `UnsafePointer` types
 and scalar Int/Float types are currently supported. This is quite brittle now. We should use a proper Mojo parser or dump MLIR representations like in this [gist](https://gist.github.com/soraros/44d56698cb20a6c5db3160f13ca81675)
+
 
 
 
