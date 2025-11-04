@@ -53,8 +53,11 @@ mojo_check_python_requirements <- function() {
     {
       if (python3_available) {
         # Try python -m pip --version
-        status <- system2("python3", c("-m", "pip", "--version"),
-          stdout = FALSE, stderr = FALSE
+        status <- system2(
+          "python3",
+          c("-m", "pip", "--version"),
+          stdout = FALSE,
+          stderr = FALSE
         )
         status == 0
       } else {
@@ -70,5 +73,5 @@ mojo_check_python_requirements <- function() {
     pip = pip_available
   )
 
-  return(requirements)
+  requirements
 }
