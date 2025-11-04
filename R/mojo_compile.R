@@ -369,7 +369,8 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
           "  return R_NilValue; // Pointer return not supported"
         )
       } else {
-        conversion <- switch(ret_type,
+        conversion <- switch(
+          ret_type,
           "double" = sprintf(
             "  SEXP out = PROTECT(ScalarReal(result)); UNPROTECT(%d); return out;",
             n_args + 1
@@ -449,11 +450,12 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
 #' @return Invisibly returns named list of R wrapper functions
 #' @export
 mojo_compile <- function(
-    mojo_file,
-    venv = NULL,
-    PKG_LIBS = NULL,
-    env = parent.frame(),
-    verbosity = 0) {
+  mojo_file,
+  venv = NULL,
+  PKG_LIBS = NULL,
+  env = parent.frame(),
+  verbosity = 0
+) {
   if (!file.exists(mojo_file)) {
     stop("Mojo file not found: ", mojo_file)
   }
