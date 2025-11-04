@@ -117,12 +117,16 @@ extern void convolve(const double *signal, int signal_len,
 // .Call wrapper for hello 
 SEXP hello_call(SEXP msg) {
 #ifndef HELLOMOJO_NO_BUILD
-    if (!isString(msg) || LENGTH(msg) != 1)
+    PROTECT(msg);
+    if (!isString(msg) || LENGTH(msg) != 1) {
+        UNPROTECT(1);
         Rf_error("msg must be a single string");
+    }
 
     const char *cmsg = CHAR(STRING_ELT(msg, 0));
     hello(cmsg);
 
+    UNPROTECT(1);
     return R_NilValue;
 #else
     Rf_error("Mojo library not available");
@@ -132,10 +136,24 @@ SEXP hello_call(SEXP msg) {
 // .Call wrapper for the Mojo add function
 SEXP add_call(SEXP a, SEXP b) {
 #ifndef HELLOMOJO_NO_BUILD
+    PROTECT(a);
+    PROTECT(b);
+    if (!isReal(a) && !isInteger(a)) {
+        UNPROTECT(2);
+        Rf_error("a must be numeric");
+    }
+    if (!isReal(b) && !isInteger(b)) {
+        UNPROTECT(2);
+        Rf_error("b must be numeric");
+    }
+    
     double ad = asReal(a);
     double bd = asReal(b);
     double result = add(ad, bd);
-    return ScalarReal(result);
+    
+    SEXP out = PROTECT(ScalarReal(result));
+    UNPROTECT(3);
+    return out;
 #else
     Rf_error("Mojo library not available");
     return R_NilValue;
@@ -145,16 +163,27 @@ SEXP add_call(SEXP a, SEXP b) {
 // .Call wrapper for the Mojo convolution function
 SEXP convolve_call(SEXP signal, SEXP kernel) {
 #ifndef HELLOMOJO_NO_BUILD
+    PROTECT(signal);
+    PROTECT(kernel);
+    
     R_xlen_t n_signal = XLENGTH(signal);
     R_xlen_t n_kernel = XLENGTH(kernel);
-    if (!isReal(signal) || !isReal(kernel))
+    
+    if (!isReal(signal) || !isReal(kernel)) {
+        UNPROTECT(2);
         Rf_error("Both signal and kernel must be numeric vectors");
-    if (n_signal < n_kernel)
+    }
+    if (n_signal < n_kernel) {
+        UNPROTECT(2);
         Rf_error("Signal length must be >= kernel length");
+    }
+    
     R_xlen_t n_out = n_signal - n_kernel + 1;
     SEXP out = PROTECT(allocVector(REALSXP, n_out));
+    
     convolve(REAL(signal), n_signal, REAL(kernel), n_kernel, REAL(out));
-    UNPROTECT(1);
+    
+    UNPROTECT(3);
     return out;
 #else
     Rf_error("Mojo library not available");
@@ -214,7 +243,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.1066499 -0.1358363  0.8110432  0.7503796 -0.5628591 -0.9290787
+#> [1] -0.16803098 -0.41687515  0.07338533 -0.08567469 -0.49763546 -0.62299607
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -224,8 +253,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        10.53µs   24.4µs    40622.    78.2KB     57.0
-#> 2 c            9.99µs   32.9µs    32013.    78.2KB     44.9
+#> 1 mojo        10.79µs   24.4µs    40546.    78.2KB     56.8
+#> 2 c            9.96µs   32.9µs    31974.    78.2KB     44.8
 ```
 
 ## Dynamic Mojo Compilation
@@ -259,14 +288,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/Rtmpvsjwnt/mojo_venv_11fdcbe7db280
+#> Creating virtual environment at: /tmp/RtmpsuOCH1/mojo_venv_122d2635d40562
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/Rtmpvsjwnt/mojo_venv_11fdcbe7db280/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpsuOCH1/mojo_venv_122d2635d40562/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/Rtmpvsjwnt/mojo_venv_11fdcbe7db280"
+#> [1] "691M\t/tmp/RtmpsuOCH1/mojo_venv_122d2635d40562"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -274,8 +303,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/Rtmpvsjwnt/mojo_venv_11fdcbe7db280/bin/mojo
-#> Parsing Mojo file: /tmp/Rtmpvsjwnt/file11fdcb35c5c711.mojo
+#> Using Mojo: /tmp/RtmpsuOCH1/mojo_venv_122d2635d40562/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpsuOCH1/file122d264336c061.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -287,7 +316,7 @@ hellomojo::mojo_compile(
 #> Compiling C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/Rtmpvsjwnt/mojo_compile_11fdcb6808f304/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpsuOCH1/mojo_compile_122d2678173e7c/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:

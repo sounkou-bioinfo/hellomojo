@@ -199,7 +199,14 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
 
     c_code <- c(c_code, "", sprintf("SEXP %s(%s) {", wrapper_name, sexp_args))
 
-    # Convert SEXP to C types
+    # Protect all input SEXPs
+    if (n_args > 0) {
+      for (j in seq_len(n_args)) {
+        c_code <- c(c_code, sprintf("  PROTECT(arg%d);", j))
+      }
+    }
+
+    # Convert SEXP to C types with validation
     for (j in seq_along(args)) {
       arg <- args[[j]]
       c_type <- mojo_type_to_c(arg$type)
@@ -208,13 +215,30 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
         stop("Unsupported type in function ", func$name, ": ", arg$type)
       }
 
-      # Generate conversion based on type
+      # Add input validation
       if (grepl("\\*$", c_type)) {
-        # Pointer type - extract data pointer from SEXP
         base_type <- sub("\\*$", "", c_type)
         if (base_type %in% c("double", "float")) {
+          c_code <- c(
+            c_code,
+            sprintf(
+              "  if (!isReal(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be numeric\"); }",
+              j,
+              n_args,
+              j
+            )
+          )
           conversion <- sprintf("  %s %s = REAL(arg%d);", c_type, arg$name, j)
         } else if (base_type %in% c("int", "int32_t")) {
+          c_code <- c(
+            c_code,
+            sprintf(
+              "  if (!isInteger(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be integer\"); }",
+              j,
+              n_args,
+              j
+            )
+          )
           conversion <- sprintf(
             "  %s %s = INTEGER(arg%d);",
             c_type,
@@ -222,6 +246,15 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
             j
           )
         } else if (base_type == "char") {
+          c_code <- c(
+            c_code,
+            sprintf(
+              "  if (!isString(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be character\"); }",
+              j,
+              n_args,
+              j
+            )
+          )
           conversion <- sprintf(
             "  const char *%s = CHAR(STRING_ELT(arg%d, 0));",
             arg$name,
@@ -237,7 +270,16 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
           )
         }
       } else if (c_type %in% c("int", "int32_t")) {
-        # Integer scalar (for lengths/sizes)
+        c_code <- c(
+          c_code,
+          sprintf(
+            "  if (!isInteger(arg%d) && !isReal(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be numeric\"); }",
+            j,
+            j,
+            n_args,
+            j
+          )
+        )
         conversion <- sprintf(
           "  %s %s = asInteger(arg%d);",
           c_type,
@@ -245,15 +287,28 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
           j
         )
       } else if (c_type == "double") {
-        # Double scalar
-        conversion <- sprintf(
-          "  %s %s = asReal(arg%d);",
-          c_type,
-          arg$name,
-          j
+        c_code <- c(
+          c_code,
+          sprintf(
+            "  if (!isReal(arg%d) && !isInteger(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be numeric\"); }",
+            j,
+            j,
+            n_args,
+            j
+          )
         )
+        conversion <- sprintf("  %s %s = asReal(arg%d);", c_type, arg$name, j)
       } else if (c_type == "float") {
-        # Float scalar
+        c_code <- c(
+          c_code,
+          sprintf(
+            "  if (!isReal(arg%d) && !isInteger(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be numeric\"); }",
+            j,
+            j,
+            n_args,
+            j
+          )
+        )
         conversion <- sprintf(
           "  %s %s = (float)asReal(arg%d);",
           c_type,
@@ -261,6 +316,16 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
           j
         )
       } else if (c_type == "int64_t") {
+        c_code <- c(
+          c_code,
+          sprintf(
+            "  if (!isReal(arg%d) && !isInteger(arg%d)) { UNPROTECT(%d); error(\"Argument %d must be numeric\"); }",
+            j,
+            j,
+            n_args,
+            j
+          )
+        )
         conversion <- sprintf(
           "  %s %s = (int64_t)asReal(arg%d);",
           c_type,
@@ -286,6 +351,7 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
       c_code <- c(
         c_code,
         sprintf("  %s(%s);", func$name, call_args),
+        if (n_args > 0) sprintf("  UNPROTECT(%d);", n_args) else "",
         "  return R_NilValue;"
       )
     } else {
@@ -299,16 +365,36 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
         # Pointer return - not supported, would need length info
         c_code <- c(
           c_code,
+          if (n_args > 0) sprintf("  UNPROTECT(%d);", n_args) else "",
           "  return R_NilValue; // Pointer return not supported"
         )
       } else {
-        conversion <- switch(ret_type,
-          "double" = "  return ScalarReal(result);",
-          "float" = "  return ScalarReal((double)result);",
-          "int" = "  return ScalarInteger(result);",
-          "int32_t" = "  return ScalarInteger((int)result);",
-          "int64_t" = "  return ScalarReal((double)result);",
-          "  return R_NilValue; // Unsupported return type"
+        conversion <- switch(
+          ret_type,
+          "double" = sprintf(
+            "  SEXP out = PROTECT(ScalarReal(result)); UNPROTECT(%d); return out;",
+            n_args + 1
+          ),
+          "float" = sprintf(
+            "  SEXP out = PROTECT(ScalarReal((double)result)); UNPROTECT(%d); return out;",
+            n_args + 1
+          ),
+          "int" = sprintf(
+            "  SEXP out = PROTECT(ScalarInteger(result)); UNPROTECT(%d); return out;",
+            n_args + 1
+          ),
+          "int32_t" = sprintf(
+            "  SEXP out = PROTECT(ScalarInteger((int)result)); UNPROTECT(%d); return out;",
+            n_args + 1
+          ),
+          "int64_t" = sprintf(
+            "  SEXP out = PROTECT(ScalarReal((double)result)); UNPROTECT(%d); return out;",
+            n_args + 1
+          ),
+          sprintf(
+            "  UNPROTECT(%d); return R_NilValue; // Unsupported return type",
+            n_args
+          )
         )
         c_code <- c(c_code, conversion)
       }
@@ -365,11 +451,12 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
 #' @return Invisibly returns named list of R wrapper functions
 #' @export
 mojo_compile <- function(
-    mojo_file,
-    venv = NULL,
-    PKG_LIBS = NULL,
-    env = parent.frame(),
-    verbosity = 0) {
+  mojo_file,
+  venv = NULL,
+  PKG_LIBS = NULL,
+  env = parent.frame(),
+  verbosity = 0
+) {
   if (!file.exists(mojo_file)) {
     stop("Mojo file not found: ", mojo_file)
   }
@@ -484,31 +571,40 @@ mojo_compile <- function(
 
   # Don't change working directory - use absolute paths instead
   command <- file.path(R.home("bin"), "R")
-  args <- c("CMD", "SHLIB", c_file, "-o", file.path(tmp_dir, paste0("mojo_wrappers", .Platform$dynlib.ext)))
+  args <- c(
+    "CMD",
+    "SHLIB",
+    c_file,
+    "-o",
+    file.path(tmp_dir, paste0("mojo_wrappers", .Platform$dynlib.ext))
+  )
 
   # Set environment variables for the compilation
   old_makevars <- Sys.getenv("R_MAKEVARS_USER", unset = NA)
   Sys.setenv(R_MAKEVARS_USER = makevars_file)
 
-  tryCatch({
-    status <- system2(
-      command,
-      args,
-      stdout = if (verbosity >= 3) "" else FALSE,
-      stderr = if (verbosity >= 3) "" else FALSE
-    )
+  tryCatch(
+    {
+      status <- system2(
+        command,
+        args,
+        stdout = if (verbosity >= 3) "" else FALSE,
+        stderr = if (verbosity >= 3) "" else FALSE
+      )
 
-    if (status != 0) {
-      stop("C wrapper compilation failed")
+      if (status != 0) {
+        stop("C wrapper compilation failed")
+      }
+    },
+    finally = {
+      # Restore R_MAKEVARS_USER
+      if (is.na(old_makevars)) {
+        Sys.unsetenv("R_MAKEVARS_USER")
+      } else {
+        Sys.setenv(R_MAKEVARS_USER = old_makevars)
+      }
     }
-  }, finally = {
-    # Restore R_MAKEVARS_USER
-    if (is.na(old_makevars)) {
-      Sys.unsetenv("R_MAKEVARS_USER")
-    } else {
-      Sys.setenv(R_MAKEVARS_USER = old_makevars)
-    }
-  })
+  )
 
   dll_file <- file.path(tmp_dir, paste0("mojo_wrappers", .Platform$dynlib.ext))
   if (!file.exists(dll_file)) {
