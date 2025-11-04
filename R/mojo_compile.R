@@ -439,7 +439,7 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
 
 #' Compile Mojo code and create R wrapper functions
 #'
-#' Similar to callme::compile() but for Mojo code.
+#' Similar to `callme::compile()` but for Mojo code.
 #' Parses Mojo source, extracts export functions, compiles to shared library,
 #' generates C wrappers, compiles those, and creates R functions.
 #'
