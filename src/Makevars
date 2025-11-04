@@ -1,4 +1,4 @@
 ThisDIR = $(CURDIR)
 
-PKG_CFLAGS = 
-PKG_LIBS = -L$(ThisDIR)/../inst/libs -lhello -Wl,-rpath,'$$ORIGIN'
+PKG_CFLAGS = -DHELLOMOJO_NO_BUILD
+PKG_LIBS = 

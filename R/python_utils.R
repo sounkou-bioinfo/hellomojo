@@ -3,21 +3,22 @@
 #' @param python_cmd Python command to check (default: "python3")
 #' @return Logical indicating if venv module is available
 #' @noRd
+#' Check if Python has venv module available
+#'
+#' @param python_cmd Python command to check (default: "python3")
+#' @return Logical indicating if venv module is available
+#' @noRd
 python_has_venv <- function(python_cmd = "python3") {
   # Check if python command exists
   if (Sys.which(python_cmd) == "") {
     return(FALSE)
   }
 
-  # Try to import venv module
+  # Try to import venv module using system() instead of system2()
   result <- tryCatch(
     {
-      status <- system2(
-        python_cmd,
-        c("-c", "import venv"),
-        stdout = FALSE,
-        stderr = FALSE
-      )
+      cmd <- paste(python_cmd, "-c 'import venv'")
+      status <- system(cmd, ignore.stdout = TRUE, ignore.stderr = TRUE)
       status == 0
     },
     error = function(e) {
@@ -55,10 +56,15 @@ mojo_check_python_requirements <- function() {
 
   pip_available <- tryCatch(
     {
-      pip_path <- Sys.which("pip")
-      pip3_path <- Sys.which("pip3")
-      (!is.na(pip_path) && pip_path != "") ||
-        (!is.na(pip3_path) && pip3_path != "")
+      if (python3_available) {
+        # Try python -m pip --version
+        status <- system2("python3", c("-m", "pip", "--version"),
+          stdout = FALSE, stderr = FALSE
+        )
+        status == 0
+      } else {
+        FALSE
+      }
     },
     error = function(e) FALSE
   )
