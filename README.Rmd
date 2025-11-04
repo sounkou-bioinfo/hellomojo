@@ -27,14 +27,14 @@ Mojo code is compiled to a shared library, in our case `libhello.so`. A C file [
 By default, the package installs without Mojo installation via pixi
 
 ```r
-install.packages(".", repos = NULL, type = "source")
+install.packages('hellomojo', repos = c('https://sounkou-bioinfo.r-universe.dev', 'https://cloud.r-project.org'))
 ```
 
 To enable compiling the Mojo functions with the RC code, set `HELLOMOJO_BUILD=1` before installation. The configure script will automatically install pixi and compile the hellomojo shared library:
 
 ```r
 Sys.setenv(HELLOMOJO_BUILD = "1")
-install.packages(".", repos = NULL, type = "source")
+install.packages('hellomojo', repos = c('https://sounkou-bioinfo.r-universe.dev', 'https://cloud.r-project.org'))
 ```
 
 For dynamic compilation workflows similar to `callme::compile()`, install Mojo in a virtual environment first:
