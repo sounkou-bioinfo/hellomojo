@@ -129,8 +129,6 @@ fn multiply(x: Float64, y: Float64) -> Float64:
 
 @export
 fn greet(name: UnsafePointer[c_char]):
-
-    alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
     try:
         var handle: DLHandle = DLHandle("")
         var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
@@ -160,7 +158,7 @@ hellomojo::mojo_compile(
 
 # Now the @export functions are available:
 multiply(6.0, 7.0)
-greet("Hello from dynamically compiled Mojo!\\n")
+greet("Hello from dynamically compiled Mojo!")
 
 unlink(temp_mojo)
 unlink(venv_path, recursive = TRUE)
