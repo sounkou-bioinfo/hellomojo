@@ -27,10 +27,9 @@ mojo_find <- function(venv = NULL) {
 #' @param python Python executable to use. Default is "python3".
 #' @export
 mojo_install <- function(
-  venv = ".venv/mojo",
-  nightly = TRUE,
-  python = "python3"
-) {
+    venv = ".venv/mojo",
+    nightly = TRUE,
+    python = "python3") {
   if (dir.exists(venv)) {
     message("Virtual environment already exists at: ", venv)
   } else {
@@ -56,7 +55,7 @@ mojo_install <- function(
         "install",
         "mojo",
         "--extra-index-url",
-        "https://modular.gateway.scarf.sh/simple/"
+        "https://dl.modular.com/public/nightly/python/simple/"
       )
     )
   } else {
@@ -97,9 +96,8 @@ mojo_install <- function(
 #' @param source Path to Mojo source file
 #' @export
 mojo_build_package <- function(
-  venv = ".venv/mojo",
-  source = "inst/mojo/hellomojo/hellomojo.mojo"
-) {
+    venv = ".venv/mojo",
+    source = "inst/mojo/hellomojo/hellomojo.mojo") {
   if (!file.exists(source)) {
     stop("Mojo source not found: ", source)
   }
