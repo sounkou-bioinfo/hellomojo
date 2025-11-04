@@ -1,9 +1,9 @@
 #' Extract exported functions from Mojo source code
 #'
-#' Parses a .mojo file and extracts all functions marked with export
+#' Parses a mojo file and extracts all functions marked with export
 #' that have C-compatible types
 #'
-#' @param mojo_file Path to .mojo source file
+#' @param mojo_file Path to mojo source file
 #' @return Data frame with columns: name, return_type, args (list)
 #' @noRd
 mojo_extract_exports <- function(mojo_file) {
@@ -369,8 +369,7 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
           "  return R_NilValue; // Pointer return not supported"
         )
       } else {
-        conversion <- switch(
-          ret_type,
+        conversion <- switch(ret_type,
           "double" = sprintf(
             "  SEXP out = PROTECT(ScalarReal(result)); UNPROTECT(%d); return out;",
             n_args + 1
@@ -440,10 +439,9 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
 #' Compile Mojo code and create R wrapper functions
 #'
 #' Similar to `callme::compile()` but for Mojo code.
-#' Parses Mojo source, extracts export functions, compiles to shared library,
+#' Parses Mojo files, extracts export functions, compiles to shared library,
 #' generates C wrappers, compiles those, and creates R functions.
-#'
-#' @param mojo_file Path to .mojo source file
+#' @param mojo_file Path to mojo file
 #' @param venv Path to Python virtual environment with Mojo installed
 #' @param PKG_LIBS Additional linker flags (e.g., for external libraries)
 #' @param env Environment to assign wrapper functions. Default: parent.frame()
@@ -451,12 +449,11 @@ mojo_generate_c_wrappers <- function(exports, lib_name = "libhello") {
 #' @return Invisibly returns named list of R wrapper functions
 #' @export
 mojo_compile <- function(
-  mojo_file,
-  venv = NULL,
-  PKG_LIBS = NULL,
-  env = parent.frame(),
-  verbosity = 0
-) {
+    mojo_file,
+    venv = NULL,
+    PKG_LIBS = NULL,
+    env = parent.frame(),
+    verbosity = 0) {
   if (!file.exists(mojo_file)) {
     stop("Mojo file not found: ", mojo_file)
   }

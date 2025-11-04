@@ -27,10 +27,9 @@ mojo_find <- function(venv = NULL) {
 #' @param python Python executable to use. Default is "python3".
 #' @export
 mojo_install <- function(
-  venv = ".venv/mojo",
-  nightly = TRUE,
-  python = "python3"
-) {
+    venv = ".venv/mojo",
+    nightly = TRUE,
+    python = "python3") {
   if (dir.exists(venv)) {
     message("Virtual environment already exists at: ", venv)
   } else {
@@ -89,55 +88,6 @@ mojo_install <- function(
   invisible(mojo_path)
 }
 
-#' Compile Mojo source file to shared library
-#'
-#' @param source Path to .mojo source file
-#' @param output Path for output shared library
-#' @param venv Path to virtual environment with Mojo. If NULL, uses system mojo.
-#' @export
-mojo_compile <- function(source, output = NULL, venv = NULL) {
-  if (!file.exists(source)) {
-    stop("Source file not found: ", source)
-  }
-
-  mojo_path <- mojo_find(venv)
-  if (is.null(mojo_path)) {
-    stop("Mojo not found. Install with mojo_install() or set venv parameter.")
-  }
-
-  if (is.null(output)) {
-    # Default output name
-    output <- sub("\\.mojo$", "", source)
-    libsuffix <- if (Sys.info()["sysname"] == "Darwin") ".dylib" else ".so"
-    output <- paste0(output, libsuffix)
-  }
-
-  message("Compiling ", source, " to ", output)
-
-  status <- system2(
-    mojo_path,
-    c(
-      "build",
-      source,
-      "--emit",
-      "shared-lib",
-      "-o",
-      output
-    )
-  )
-
-  if (status != 0) {
-    stop("Mojo compilation failed")
-  }
-
-  if (!file.exists(output)) {
-    stop("Compilation succeeded but output file not found")
-  }
-
-  message("Successfully compiled to: ", output)
-  invisible(output)
-}
-
 #' Build Mojo library for this package
 #'
 #' Compiles the Mojo source and installs it to inst/libs
@@ -146,9 +96,8 @@ mojo_compile <- function(source, output = NULL, venv = NULL) {
 #' @param source Path to Mojo source file
 #' @export
 mojo_build_package <- function(
-  venv = ".venv/mojo",
-  source = "inst/mojo/hellomojo/hellomojo.mojo"
-) {
+    venv = ".venv/mojo",
+    source = "inst/mojo/hellomojo/hellomojo.mojo") {
   if (!file.exists(source)) {
     stop("Mojo source not found: ", source)
   }
