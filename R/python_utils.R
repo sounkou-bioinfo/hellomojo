@@ -3,11 +3,6 @@
 #' @param python_cmd Python command to check (default: "python3")
 #' @return Logical indicating if venv module is available
 #' @noRd
-#' Check if Python has venv module available
-#'
-#' @param python_cmd Python command to check (default: "python3")
-#' @return Logical indicating if venv module is available
-#' @noRd
 python_has_venv <- function(python_cmd = "python3") {
   # Check if python command exists
   if (Sys.which(python_cmd) == "") {
