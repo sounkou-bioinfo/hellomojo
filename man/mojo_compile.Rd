@@ -40,6 +40,6 @@ Invisibly returns named list of R wrapper functions
 }
 \description{
 Similar to callme::compile() but for Mojo code.
-Parses Mojo source, extracts @export functions, compiles to shared library,
+Parses Mojo source, extracts export functions, compiles to shared library,
 generates C wrappers, compiles those, and creates R functions.
 }

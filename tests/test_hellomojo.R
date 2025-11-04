@@ -33,7 +33,7 @@ venv_size
 hellomojo::mojo_compile(
   temp_mojo,
   venv = venv_path,
-  verbosity = 1
+  verbosity = 4
 )
 
 multiply(6.0, 7.0)
