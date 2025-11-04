@@ -477,25 +477,38 @@ mojo_compile <- function(
   makevars_file <- file.path(tmp_dir, "Makevars")
   writeLines(makevars_content, makevars_file)
 
-  # Change to tmp_dir for compilation
-  old_dir <- getwd()
-  setwd(tmp_dir)
-  on.exit(setwd(old_dir), add = TRUE)
-
-  # Compile
-  command <- file.path(R.home("bin"), "R")
-  args <- c("CMD", "SHLIB", basename(c_file))
-
-  status <- system2(
-    command,
-    args,
-    stdout = if (verbosity >= 3) "" else FALSE,
-    stderr = if (verbosity >= 3) "" else FALSE
-  )
-
-  if (status != 0) {
-    stop("C wrapper compilation failed")
+  # Compile C wrappers with R CMD SHLIB
+  if (verbosity >= 1) {
+    message("Compiling C wrappers...")
   }
+
+  # Don't change working directory - use absolute paths instead
+  command <- file.path(R.home("bin"), "R")
+  args <- c("CMD", "SHLIB", c_file, "-o", file.path(tmp_dir, paste0("mojo_wrappers", .Platform$dynlib.ext)))
+
+  # Set environment variables for the compilation
+  old_makevars <- Sys.getenv("R_MAKEVARS_USER", unset = NA)
+  Sys.setenv(R_MAKEVARS_USER = makevars_file)
+
+  tryCatch({
+    status <- system2(
+      command,
+      args,
+      stdout = if (verbosity >= 3) "" else FALSE,
+      stderr = if (verbosity >= 3) "" else FALSE
+    )
+
+    if (status != 0) {
+      stop("C wrapper compilation failed")
+    }
+  }, finally = {
+    # Restore R_MAKEVARS_USER
+    if (is.na(old_makevars)) {
+      Sys.unsetenv("R_MAKEVARS_USER")
+    } else {
+      Sys.setenv(R_MAKEVARS_USER = old_makevars)
+    }
+  })
 
   dll_file <- file.path(tmp_dir, paste0("mojo_wrappers", .Platform$dynlib.ext))
   if (!file.exists(dll_file)) {
