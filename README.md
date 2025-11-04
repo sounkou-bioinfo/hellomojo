@@ -243,7 +243,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1] -0.16803098 -0.41687515  0.07338533 -0.08567469 -0.49763546 -0.62299607
+#> [1]  0.63776504 -0.30658109  0.08094049  1.38277684  1.40873227  0.43931562
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -253,8 +253,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        10.79µs   24.4µs    40546.    78.2KB     56.8
-#> 2 c            9.96µs   32.9µs    31974.    78.2KB     44.8
+#> 1 mojo           11µs   24.5µs    40437.    78.2KB     56.7
+#> 2 c              10µs   32.8µs    31959.    78.2KB     44.8
 ```
 
 ## Dynamic Mojo Compilation
@@ -288,14 +288,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/RtmpsuOCH1/mojo_venv_122d2635d40562
+#> Creating virtual environment at: /tmp/RtmpVOkoWB/mojo_venv_12528b77bec973
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/RtmpsuOCH1/mojo_venv_122d2635d40562/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpVOkoWB/mojo_venv_12528b77bec973/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/RtmpsuOCH1/mojo_venv_122d2635d40562"
+#> [1] "691M\t/tmp/RtmpVOkoWB/mojo_venv_12528b77bec973"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -303,8 +303,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/RtmpsuOCH1/mojo_venv_122d2635d40562/bin/mojo
-#> Parsing Mojo file: /tmp/RtmpsuOCH1/file122d264336c061.mojo
+#> Using Mojo: /tmp/RtmpVOkoWB/mojo_venv_12528b77bec973/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpVOkoWB/file12528b6ff26b73.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -316,7 +316,7 @@ hellomojo::mojo_compile(
 #> Compiling C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/RtmpsuOCH1/mojo_compile_122d2678173e7c/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpVOkoWB/mojo_compile_12528bd6890f1/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:

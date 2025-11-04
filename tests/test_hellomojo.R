@@ -1,5 +1,28 @@
-# Create a simple Mojo file
+# Dynamic Mojo compilation test
 library(hellomojo)
+
+# Check if system requirements are available
+requirements <- hellomojo::mojo_check_python_requirements()
+
+# Ensure we have valid logical values
+python3_ok <- isTRUE(requirements[["python3"]])
+venv_ok <- isTRUE(requirements[["python3_venv"]])
+
+if (!python3_ok) {
+  cat("Skipping Mojo tests: python3 not available\n")
+  quit(status = 0)
+}
+
+if (!venv_ok) {
+  cat("Skipping Mojo tests: python3-venv module not available\n")
+  cat("Install with: sudo apt-get install python3-venv (Ubuntu/Debian)\n")
+  cat("or: sudo yum install python3-venv (RHEL/CentOS)\n")
+  quit(status = 0)
+}
+
+cat("Python requirements satisfied, proceeding with Mojo tests...\n")
+
+# Create a simple Mojo file
 mojo_code <- '
 from sys.ffi import DLHandle, c_char, c_int
 alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
@@ -9,8 +32,6 @@ fn multiply(x: Float64, y: Float64) -> Float64:
 
 @export
 fn greet(name: UnsafePointer[c_char]):
-
-    alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
     try:
         var handle: DLHandle = DLHandle("")
         var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
