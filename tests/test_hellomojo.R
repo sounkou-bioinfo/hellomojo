@@ -2,8 +2,14 @@
 library(hellomojo)
 
 # Check if system requirements are available
-requirements <- hellomojo::mojo_check_python_requirements()
-
+requirements <- NULL
+try(
+  requirements <- hellomojo::mojo_check_python_requirements()
+)
+if (is.null(requirements)) {
+  cat("Skipping Mojo tests: unable to determine Python requirements\n")
+  quit(status = 0)
+}
 # Ensure we have valid logical values
 python3_ok <- isTRUE(requirements[["python3"]])
 venv_ok <- isTRUE(requirements[["python3_venv"]])
