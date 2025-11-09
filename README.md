@@ -366,6 +366,6 @@ manage Mojo installation separately at runtime(still big tough).
 ## References
 
 - [Mojo Getting Started
-  Guide](https://docs.modular.com/mojo/manual/get-started)  
+  Guide](https://docs.modular.com/mojo/manual/get-started) 
 - [pixi: Package and Environment Manager](https://pixi.sh/)
 - [simpleCall example](https://github.com/coolbutuseless/simpleCall)
