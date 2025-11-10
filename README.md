@@ -54,7 +54,7 @@ hellomojo::hellomojo()
 #> hello from R via Mojo!
 hellomojo::hellomojo_add(10, 30)
 #> [1] 40
-# Get comprehensive system and device information (CPU + GPU when available)hellomojo::hellomojo_device_info(device_id = 0L, api_name = "cuda")
+# Get comprehensive system and device information (CPU + GPU when available)hellomojo::hellomojo_device_info()
 ```
 
 the mojo code
@@ -316,7 +316,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.1384720  0.7683796  0.5279278 -0.3473471 -0.1953617  0.3511470
+#> [1]  0.94223630  1.02165901  0.41232933  0.32001255 -0.03994584 -0.31078365
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -326,8 +326,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        11.11µs   24.4µs    40601.    78.2KB     56.9
-#> 2 c            9.99µs   32.8µs    32034.    78.2KB     44.9
+#> 1 mojo         10.7µs   24.3µs    40866.    78.2KB     57.3
+#> 2 c              10µs   32.8µs    32074.    78.2KB     45.0
 ```
 
 ## Dynamic Mojo Compilation
@@ -361,14 +361,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/Rtmpp76T8X/mojo_venv_14f5c04ebbe9c4
+#> Creating virtual environment at: /tmp/RtmpYfHV6R/mojo_venv_14f74b380840bb
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/Rtmpp76T8X/mojo_venv_14f5c04ebbe9c4/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpYfHV6R/mojo_venv_14f74b380840bb/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/Rtmpp76T8X/mojo_venv_14f5c04ebbe9c4"
+#> [1] "691M\t/tmp/RtmpYfHV6R/mojo_venv_14f74b380840bb"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -376,8 +376,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/Rtmpp76T8X/mojo_venv_14f5c04ebbe9c4/bin/mojo
-#> Parsing Mojo file: /tmp/Rtmpp76T8X/file14f5c06d966818.mojo
+#> Using Mojo: /tmp/RtmpYfHV6R/mojo_venv_14f74b380840bb/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpYfHV6R/file14f74b1120336c.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -389,7 +389,7 @@ hellomojo::mojo_compile(
 #> Compiling C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/Rtmpp76T8X/mojo_compile_14f5c071c80c20/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpYfHV6R/mojo_compile_14f74b1dd6b725/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:
@@ -468,7 +468,7 @@ writeLines(device_info_mojo, temp_mojo_system)
 hellomojo::mojo_compile(temp_mojo_system, venv = venv_path)
 
 # Get comprehensive system info (CPU always, GPU when available)
-hellomojo::hellomojo_device_info(0L, "cuda")
+system_info(0L, "cuda")
 
 unlink(temp_mojo_system)
 ```
