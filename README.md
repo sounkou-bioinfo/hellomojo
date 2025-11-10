@@ -50,11 +50,26 @@ mojo_compile("inst/mojo/hellomojo/hellomojo.mojo", venv = ".venv/mojo")
 
 ``` r
 # Load the package and call the native function
+
 hellomojo::hellomojo()
 #> hello from R via Mojo!
+
 hellomojo::hellomojo_add(10, 30)
 #> [1] 40
-# Get comprehensive system and device information (CPU + GPU when available)hellomojo::hellomojo_device_info()
+
+# Get comprehensive system and device information (CPU + GPU when available)
+
+hellomojo::hellomojo_device_info()
+#> === System Information ===
+#> CPU Information:
+#>   OS             : linux
+#>   CPU Arch       : raptorlake
+#>   Physical Cores : 14
+#>   Logical Cores  : 20
+#>   CPU Features   : sse4 avx avx2
+#> 
+#> GPU Information:
+#>   Status         : GPU detection requires additional Mojo modules
 ```
 
 the mojo code
@@ -316,7 +331,8 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.3240850 -0.1392990  0.2558382  0.3101026 -0.2291883 -0.2128026
+#> [1]  0.005746199  0.307588405 -0.082256321 -0.219308302 -0.415809693
+#> [6] -0.900309114
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -326,8 +342,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo           11µs   24.3µs    40800.    78.2KB     57.2
-#> 2 c            9.98µs   32.9µs    32017.    78.2KB     44.9
+#> 1 mojo         10.5µs   24.2µs    40989.    78.2KB     57.5
+#> 2 c              10µs   32.8µs    32049.    78.2KB     44.9
 ```
 
 ## Dynamic Mojo Compilation
@@ -361,14 +377,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/RtmpcUJE1z/mojo_venv_14f8b4228ee524
+#> Creating virtual environment at: /tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/RtmpcUJE1z/mojo_venv_14f8b4228ee524/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/RtmpcUJE1z/mojo_venv_14f8b4228ee524"
+#> [1] "691M\t/tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -376,8 +392,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/RtmpcUJE1z/mojo_venv_14f8b4228ee524/bin/mojo
-#> Parsing Mojo file: /tmp/RtmpcUJE1z/file14f8b431a205c8.mojo
+#> Using Mojo: /tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpPhUPCN/file14fa8e11b1863d.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -389,7 +405,7 @@ hellomojo::mojo_compile(
 #> Compiling C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/RtmpcUJE1z/mojo_compile_14f8b441025cc1/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpPhUPCN/mojo_compile_14fa8e55ec7387/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:
