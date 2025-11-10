@@ -23,3 +23,13 @@ hellomojo_add <- function(a, b) {
 hellomojo_convolve <- function(signal, kernel) {
   .Call(convolve, as.numeric(signal), as.numeric(kernel))
 }
+
+#' Get system and GPU device information using Mojo
+#' Shows both CPU and GPU information when available
+#' @param device_id Integer device ID (default: 0)
+#' @param api_name Character string specifying the GPU API ("cuda" or "hip", default: "cuda")
+#' @return Prints system and device information to console
+#' @export
+hellomojo_device_info <- function(device_id = 0L, api_name = "cuda") {
+  invisible(.Call(device_info, as.integer(device_id), as.character(api_name)))
+}
