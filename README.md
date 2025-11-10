@@ -331,7 +331,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  1.1977912  0.7719271  0.3472751 -0.3865214 -0.7638103 -0.3441482
+#> [1] -1.17558003 -1.14733943 -0.08461554  0.54062624  0.38966556 -0.30541349
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -341,8 +341,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo        10.82µs   24.3µs    40860.    78.2KB     57.3
-#> 2 c            9.95µs   32.8µs    32097.    78.2KB     45.0
+#> 1 mojo        10.58µs   24.3µs    40911.    78.2KB     57.4
+#> 2 c            9.98µs   32.9µs    32033.    78.2KB     44.9
 ```
 
 ## Dynamic Mojo Compilation
@@ -376,14 +376,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2
+#> Creating virtual environment at: /tmp/RtmpDkl7a2/mojo_venv_1501074ede14d1
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpDkl7a2/mojo_venv_1501074ede14d1/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2"
+#> [1] "691M\t/tmp/RtmpDkl7a2/mojo_venv_1501074ede14d1"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -391,8 +391,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2/bin/mojo
-#> Parsing Mojo file: /tmp/RtmpgcwkAc/file14fc3b2f82f51b.mojo
+#> Using Mojo: /tmp/RtmpDkl7a2/mojo_venv_1501074ede14d1/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpDkl7a2/file1501074eab34df.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -404,7 +404,7 @@ hellomojo::mojo_compile(
 #> Compiling C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/RtmpgcwkAc/mojo_compile_14fc3b6be2d239/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpDkl7a2/mojo_compile_150107721c9c7d/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:
@@ -416,76 +416,6 @@ greet("Hello from dynamically compiled Mojo!")
 
 unlink(temp_mojo)
 unlink(venv_path, recursive = TRUE)
-```
-
-## System and Device Information with Dynamic Compilation
-
-Here’s how to get comprehensive system and GPU device information using
-dynamic Mojo compilation:
-
-``` r
-# Create Mojo code for system and device info
-device_info_mojo <- '
-from sys.ffi import DLHandle, c_char, c_int
-import gpu.host
-from sys import CompilationTarget, num_logical_cores, num_physical_cores
-from sys.info import _triple_attr
-
-alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
-
-fn compute_capability_to_arch_name(major: Int, minor: Int) -> String:
-    if major == 1:
-        return "tesla"
-    if major == 2:
-        return "fermi"
-    if major == 3:
-        return "kepler"
-    # ... more architectures
-    return "Unknown"
-
-@export
-fn system_info(device_id: Int32, api_name: UnsafePointer[c_char]):
-    try:
-        var handle: DLHandle = DLHandle("")
-        var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
-        
-        _ = Rprintf("=== System Information ===\\n")
-        
-        # CPU info always shown
-        var os_name = "linux"  # simplified
-        var cpu = CompilationTarget._arch()
-        
-        _ = Rprintf("CPU Information:\\n")
-        var os_msg = "  OS             : " + os_name + "\\n"
-        _ = Rprintf(os_msg.unsafe_ptr())
-        var cpu_msg = "  CPU            : " + String(cpu) + "\\n"
-        _ = Rprintf(cpu_msg.unsafe_ptr())
-        
-        # Try GPU info
-        try:
-            var api = String(api_name)
-            var ctx = gpu.host.DeviceContext(Int(device_id), api=api)
-            _ = Rprintf("\\nGPU Information:\\n")
-            var name_msg = "  Name           : " + ctx.name() + "\\n"
-            _ = Rprintf(name_msg.unsafe_ptr())
-        except:
-            _ = Rprintf("\\nGPU Information:\\n")
-            _ = Rprintf("  Status         : No GPU detected\\n")
-    except:
-        pass
-'
-
-# Write to temporary file
-temp_mojo_system <- tempfile(fileext = ".mojo")
-writeLines(device_info_mojo, temp_mojo_system)
-
-# Compile and load
-hellomojo::mojo_compile(temp_mojo_system, venv = venv_path)
-
-# Get comprehensive system info (CPU always, GPU when available)
-system_info(0L, "cuda")
-
-unlink(temp_mojo_system)
 ```
 
 This parses the Mojo file, extracts all `@export` functions, generates C
@@ -503,10 +433,10 @@ environments. For compilation at installation time, we use pixi to get
 Mojo binaries, but installing this on the R Windows toolchain is not
 straightforward. We should consider using uv or creating an R package
 that installs pixi. Moreover, Windows support could not be added to the
-current pixi workspace (because Mojo only supports WSL). This package
-should work fine on Unix systems.
+current pixi workspace (because Mojo only supports WSL), same applies to
+pip install. This package should work fine on Unix systems.
 
-The dynamic compilation approach (`mojo_compile()`) provides a more
+The dynamic compilation approach (`mojo_compile()`) provides a
 lightweight alternative that only requires a Python virtual environment
 with Mojo installed, avoiding the need for pixi entirely. This makes the
 installation much more manageable and potentially Windows-compatible (if
@@ -514,12 +444,14 @@ Mojo support windows).
 
 We are calling the Mojo shared object in the same address space as R and
 calling the R C API from Mojo FFI, even though the toolchains are
-different.
+different, which may cause ABI issues.
 
-The main limitation remains that the pixi strategy downloads the entire
-Mojo runtime and toolchain (essentially installing LLVM), leading to a
-~1GB install. The dynamic approach mitigates this by allowing users to
-manage Mojo installation separately at runtime(still big tough).
+We could reduce the amount of boilerplace if the convert the right way
+all R C callable functions into SEXP like the do for the mojo stdlib
+[python module
+support](https://github.com/modular/modular/blob/5257cb3b7cdecb7b3cb04c31d3d472c4e248211d/mojo/stdlib/stdlib/python/_cpython.mojo).
+This should requires us to build a mojo package that we would call say
+Rojo, that would just export the RC callables and basta.
 
 ## References
 
