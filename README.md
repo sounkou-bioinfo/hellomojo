@@ -331,8 +331,7 @@ c_result <- c_convolve(signal, kernel)
 print(all.equal(as.numeric(mojo_result), as.numeric(c_result)))
 #> [1] TRUE
 mojo_result |> head()
-#> [1]  0.005746199  0.307588405 -0.082256321 -0.219308302 -0.415809693
-#> [6] -0.900309114
+#> [1]  1.1977912  0.7719271  0.3472751 -0.3865214 -0.7638103 -0.3441482
 # Benchmark
 bench::mark(
         mojo = hellomojo::hellomojo_convolve(signal, kernel),
@@ -342,8 +341,8 @@ bench::mark(
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 mojo         10.5µs   24.2µs    40989.    78.2KB     57.5
-#> 2 c              10µs   32.8µs    32049.    78.2KB     44.9
+#> 1 mojo        10.82µs   24.3µs    40860.    78.2KB     57.3
+#> 2 c            9.95µs   32.8µs    32097.    78.2KB     45.0
 ```
 
 ## Dynamic Mojo Compilation
@@ -377,14 +376,14 @@ writeLines(mojo_code, temp_mojo)
 # Install Mojo in a temporary venv (only needed once)
 venv_path <- tempfile(pattern = "mojo_venv_")
 hellomojo::mojo_install(venv = venv_path, nightly = TRUE)
-#> Creating virtual environment at: /tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164
+#> Creating virtual environment at: /tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2
 #> Installing Mojo nightly build...
-#> Mojo installed successfully at: /tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164/bin/mojo
+#> Mojo installed successfully at: /tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2/bin/mojo
 
 # Check the size of the Mojo installation
 venv_size <- system2("du", c("-sh", venv_path), stdout = TRUE)
 venv_size
-#> [1] "691M\t/tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164"
+#> [1] "691M\t/tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2"
 
 # Compile the Mojo file and get R functions
 hellomojo::mojo_compile(
@@ -392,8 +391,8 @@ hellomojo::mojo_compile(
   venv = venv_path,
   verbosity = 1
 )
-#> Using Mojo: /tmp/RtmpPhUPCN/mojo_venv_14fa8e21c0164/bin/mojo
-#> Parsing Mojo file: /tmp/RtmpPhUPCN/file14fa8e11b1863d.mojo
+#> Using Mojo: /tmp/RtmpgcwkAc/mojo_venv_14fc3bcb18d2/bin/mojo
+#> Parsing Mojo file: /tmp/RtmpgcwkAc/file14fc3b2f82f51b.mojo
 #> Parsing arg: [ x: Float64 ]
 #>   -> name=[ x ] type=[ Float64 ]
 #> Parsing arg: [ y: Float64 ]
@@ -405,7 +404,7 @@ hellomojo::mojo_compile(
 #> Compiling C wrappers...
 #> Compiling C wrappers...
 #> Loading compiled library...
-#> Loading DLL: /tmp/RtmpPhUPCN/mojo_compile_14fa8e55ec7387/mojo_wrappers.so
+#> Loading DLL: /tmp/RtmpgcwkAc/mojo_compile_14fc3b6be2d239/mojo_wrappers.so
 #> Success! 2 function(s) available.
 
 # Now the @export functions are available:
@@ -417,6 +416,76 @@ greet("Hello from dynamically compiled Mojo!")
 
 unlink(temp_mojo)
 unlink(venv_path, recursive = TRUE)
+```
+
+## System and Device Information with Dynamic Compilation
+
+Here’s how to get comprehensive system and GPU device information using
+dynamic Mojo compilation:
+
+``` r
+# Create Mojo code for system and device info
+device_info_mojo <- '
+from sys.ffi import DLHandle, c_char, c_int
+import gpu.host
+from sys import CompilationTarget, num_logical_cores, num_physical_cores
+from sys.info import _triple_attr
+
+alias Rprintf_type = fn(fmt: UnsafePointer[c_char]) -> c_int
+
+fn compute_capability_to_arch_name(major: Int, minor: Int) -> String:
+    if major == 1:
+        return "tesla"
+    if major == 2:
+        return "fermi"
+    if major == 3:
+        return "kepler"
+    # ... more architectures
+    return "Unknown"
+
+@export
+fn system_info(device_id: Int32, api_name: UnsafePointer[c_char]):
+    try:
+        var handle: DLHandle = DLHandle("")
+        var Rprintf = handle.get_function[Rprintf_type]("Rprintf")
+        
+        _ = Rprintf("=== System Information ===\\n")
+        
+        # CPU info always shown
+        var os_name = "linux"  # simplified
+        var cpu = CompilationTarget._arch()
+        
+        _ = Rprintf("CPU Information:\\n")
+        var os_msg = "  OS             : " + os_name + "\\n"
+        _ = Rprintf(os_msg.unsafe_ptr())
+        var cpu_msg = "  CPU            : " + String(cpu) + "\\n"
+        _ = Rprintf(cpu_msg.unsafe_ptr())
+        
+        # Try GPU info
+        try:
+            var api = String(api_name)
+            var ctx = gpu.host.DeviceContext(Int(device_id), api=api)
+            _ = Rprintf("\\nGPU Information:\\n")
+            var name_msg = "  Name           : " + ctx.name() + "\\n"
+            _ = Rprintf(name_msg.unsafe_ptr())
+        except:
+            _ = Rprintf("\\nGPU Information:\\n")
+            _ = Rprintf("  Status         : No GPU detected\\n")
+    except:
+        pass
+'
+
+# Write to temporary file
+temp_mojo_system <- tempfile(fileext = ".mojo")
+writeLines(device_info_mojo, temp_mojo_system)
+
+# Compile and load
+hellomojo::mojo_compile(temp_mojo_system, venv = venv_path)
+
+# Get comprehensive system info (CPU always, GPU when available)
+system_info(0L, "cuda")
+
+unlink(temp_mojo_system)
 ```
 
 This parses the Mojo file, extracts all `@export` functions, generates C
