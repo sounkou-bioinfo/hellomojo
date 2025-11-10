@@ -51,9 +51,7 @@ mojo_compile("inst/mojo/hellomojo/hellomojo.mojo", venv = ".venv/mojo")
 # Load the package and call the native function
 hellomojo::hellomojo()
 hellomojo::hellomojo_add(10, 30)
-
-# Get comprehensive system and device information (CPU + GPU when available)
-# hellomojo::hellomojo_device_info(device_id = 0L, api_name = "cuda")
+# Get comprehensive system and device information (CPU + GPU when available)hellomojo::hellomojo_device_info(device_id = 0L, api_name = "cuda")
 ```
 
 the mojo code
@@ -231,7 +229,7 @@ writeLines(device_info_mojo, temp_mojo_system)
 hellomojo::mojo_compile(temp_mojo_system, venv = venv_path)
 
 # Get comprehensive system info (CPU always, GPU when available)
-system_info(0L, "cuda")
+hellomojo::hellomojo_device_info(0L, "cuda")
 
 unlink(temp_mojo_system)
 ```
